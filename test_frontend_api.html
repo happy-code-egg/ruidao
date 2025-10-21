@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试前端API调用</title>
+</head>
+<body>
+    <h1>测试核稿管理API</h1>
+    <button onclick="testDraftAPI()">测试草稿列表API</button>
+    <button onclick="testPendingAPI()">测试待处理列表API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testDraftAPI() {
+            try {
+                const response = await fetch('http://127.0.0.1:8018/api/review/draft-list');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<h3>草稿列表结果:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<h3>错误:</h3><pre>' + error.message + '</pre>';
+            }
+        }
+
+        async function testPendingAPI() {
+            try {
+                const response = await fetch('http://127.0.0.1:8018/api/review/pending-list');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<h3>待处理列表结果:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<h3>错误:</h3><pre>' + error.message + '</pre>';
+            }
+        }
+
+        // 页面加载时自动测试
+        window.onload = function() {
+            testDraftAPI();
+        }
+    </script>
+</body>
+</html>

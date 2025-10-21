@@ -1,0 +1,1 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["chunk-2d0cf86a"],{"63a8":function(n,a,e){"use strict";e.r(a);var t=function(){var n=this,a=n._self._c;return a("div",{staticClass:"update-container"},[a("router-view")],1)},s=[],u={name:"CaseUpdate"},c=u,i=e("2877"),r=Object(i["a"])(c,t,s,!1,null,null,null);a["default"]=r.exports}}]);

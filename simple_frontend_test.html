@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>核稿管理前端测试</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .loading { color: #666; }
+        .error { color: red; }
+        .success { color: green; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>核稿管理API测试</h1>
+    
+    <div>
+        <button onclick="testDraftList()">测试草稿列表</button>
+        <button onclick="testPendingList()">测试待处理列表</button>
+        <button onclick="testInReviewList()">测试核稿中列表</button>
+        <button onclick="testCompletedList()">测试已完成列表</button>
+    </div>
+
+    <div id="status" class="loading">点击按钮开始测试...</div>
+    <div id="result"></div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8018/api/review';
+
+        async function callAPI(endpoint, name) {
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+            
+            statusEl.innerHTML = `<span class="loading">正在获取${name}数据...</span>`;
+            resultEl.innerHTML = '';
+
+            try {
+                const response = await axios.get(`${API_BASE}/${endpoint}`);
+                
+                if (response.data.success) {
+                    const data = response.data.data;
+                    statusEl.innerHTML = `<span class="success">✅ ${name}API调用成功！数据总数: ${data.total}</span>`;
+                    
+                    if (data.list.length > 0) {
+                        let tableHTML = `
+                            <h3>${name}数据 (${data.list.length}/${data.total})</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>序号</th>
+                                        <th>项目编号</th>
+                                        <th>项目名称</th>
+                                        <th>客户名称</th>
+                                        <th>处理人</th>
+                                        <th>核稿人</th>
+                                        <th>状态时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        data.list.forEach(item => {
+                            tableHTML += `
+                                <tr>
+                                    <td>${item.serialNo}</td>
+                                    <td>${item.projectNumber}</td>
+                                    <td>${item.caseName}</td>
+                                    <td>${item.customerName}</td>
+                                    <td>${item.processor}</td>
+                                    <td>${item.reviewer}</td>
+                                    <td>${item.statusTime}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        tableHTML += '</tbody></table>';
+                        resultEl.innerHTML = tableHTML;
+                    } else {
+                        resultEl.innerHTML = `<p>暂无${name}数据</p>`;
+                    }
+                } else {
+                    statusEl.innerHTML = `<span class="error">❌ API返回错误: ${response.data.message}</span>`;
+                }
+            } catch (error) {
+                statusEl.innerHTML = `<span class="error">❌ API调用失败: ${error.message}</span>`;
+                console.error('API调用错误:', error);
+            }
+        }
+
+        function testDraftList() {
+            callAPI('draft-list', '草稿列表');
+        }
+
+        function testPendingList() {
+            callAPI('pending-list', '待处理列表');
+        }
+
+        function testInReviewList() {
+            callAPI('in-review-list', '核稿中列表');
+        }
+
+        function testCompletedList() {
+            callAPI('completed-list', '已完成列表');
+        }
+
+        // 页面加载时自动测试草稿列表
+        window.onload = function() {
+            testDraftList();
+        };
+    </script>
+</body>
+</html>

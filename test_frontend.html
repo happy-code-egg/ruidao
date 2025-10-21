@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>设置前端Token</title>
+</head>
+<body>
+    <h1>设置前端Token</h1>
+    <p>点击下面的按钮设置token到localStorage，然后访问前端页面</p>
+    <button onclick="setToken()">设置Token</button>
+    <button onclick="checkToken()">检查Token</button>
+    <button onclick="clearToken()">清除Token</button>
+    
+    <script>
+        function setToken() {
+            localStorage.setItem('token', 'Bearer 8|c9MO5eVdYhWWJpzY0HbbtjiJmubMz0JM7TED3PQL');
+            localStorage.setItem('userInfo', JSON.stringify({
+                id: 1,
+                username: 'manager',
+                real_name: '业务经理',
+                email: 'manager@example.com',
+                type: 1
+            }));
+            alert('Token已设置！');
+        }
+        
+        function checkToken() {
+            const token = localStorage.getItem('token');
+            const userInfo = localStorage.getItem('userInfo');
+            alert('Token: ' + token + '\nUserInfo: ' + userInfo);
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userInfo');
+            alert('Token已清除！');
+        }
+    </script>
+</body>
+</html>

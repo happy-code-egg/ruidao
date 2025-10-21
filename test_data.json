@@ -1,0 +1,8 @@
+{
+  "name": "Test Process",
+  "code": "test_process",
+  "category": "general",
+  "description": "This is a test process",
+  "status": 1,
+  "sort_order": 99
+}
