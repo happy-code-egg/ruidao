@@ -442,6 +442,26 @@ Route::group(['namespace' => 'Api'], function () {
     Route::post('/review/transfer', 'ReviewControllerFixed@transferProcess')->name('api.review.transfer');
     Route::post('/review/return', 'ReviewControllerFixed@returnProcess')->name('api.review.return');
 
+    // 提成配置管理（临时移到公开路由用于测试）
+    Route::get('/commission-configs', 'CommissionConfigController@index')->name('api.commission.configs.index');
+    Route::post('/commission-configs', 'CommissionConfigController@store')->name('api.commission.configs.store');
+    Route::get('/commission-configs/{id}', 'CommissionConfigController@show')->name('api.commission.configs.show');
+    Route::put('/commission-configs/{id}', 'CommissionConfigController@update')->name('api.commission.configs.update');
+    Route::delete('/commission-configs/{id}', 'CommissionConfigController@destroy')->name('api.commission.configs.destroy');
+    Route::post('/commission-configs/batch-destroy', 'CommissionConfigController@batchDestroy')->name('api.commission.configs.batch.destroy');
+    Route::post('/commission-configs/batch-enable', 'CommissionConfigController@batchEnable')->name('api.commission.configs.batch.enable');
+    Route::post('/commission-configs/batch-disable', 'CommissionConfigController@batchDisable')->name('api.commission.configs.batch.disable');
+
+    // 用户等级配置管理（临时移到公开路由用于测试）
+    Route::get('/user-level-configs', 'UserLevelConfigController@index')->name('api.user.level.configs.index');
+    Route::post('/user-level-configs', 'UserLevelConfigController@store')->name('api.user.level.configs.store');
+    Route::get('/user-level-configs/{id}', 'UserLevelConfigController@show')->name('api.user.level.configs.show');
+    Route::put('/user-level-configs/{id}', 'UserLevelConfigController@update')->name('api.user.level.configs.update');
+    Route::delete('/user-level-configs/{id}', 'UserLevelConfigController@destroy')->name('api.user.level.configs.destroy');
+    Route::post('/user-level-configs/batch-destroy', 'UserLevelConfigController@batchDestroy')->name('api.user.level.configs.batch.destroy');
+    Route::post('/user-level-configs/batch-enable', 'UserLevelConfigController@batchEnable')->name('api.user.level.configs.batch.enable');
+    Route::post('/user-level-configs/batch-disable', 'UserLevelConfigController@batchDisable')->name('api.user.level.configs.batch.disable');
+
 });
 
 // 需要认证的路由
@@ -1040,5 +1060,90 @@ Route::get('/test-workflow-config', function(\Illuminate\Http\Request $request) 
 
 });
 
+// 发票管理路由
+Route::prefix('invoice-applications')->group(function () {
+    Route::get('/', 'InvoiceApplicationController@index')->name('api.invoice.applications.index');
+    Route::get('/statistics', 'InvoiceApplicationController@statistics')->name('api.invoice.applications.statistics');
+    Route::get('/pending', 'InvoiceApplicationController@pending')->name('api.invoice.applications.pending');
+    Route::get('/pending/statistics', 'InvoiceApplicationController@pendingStats')->name('api.invoice.applications.pending.stats');
+    Route::get('/{id}', 'InvoiceApplicationController@show')->name('api.invoice.applications.show');
+    Route::post('/', 'InvoiceApplicationController@store')->name('api.invoice.applications.store');
+    Route::put('/{id}', 'InvoiceApplicationController@update')->name('api.invoice.applications.update');
+    Route::delete('/{id}', 'InvoiceApplicationController@destroy')->name('api.invoice.applications.destroy');
+    Route::post('/draft', 'InvoiceApplicationController@saveDraft')->name('api.invoice.applications.draft');
 
+    // 审批相关
+    Route::post('/{id}/approve', 'InvoiceApplicationController@approve')->name('api.invoice.applications.approve');
+    Route::post('/{id}/reject', 'InvoiceApplicationController@reject')->name('api.invoice.applications.reject');
+    Route::post('/{id}/transfer', 'InvoiceApplicationController@transfer')->name('api.invoice.applications.transfer');
+    Route::post('/batch-approve', 'InvoiceApplicationController@batchApprove')->name('api.invoice.applications.batch.approve');
+    Route::post('/batch-reject', 'InvoiceApplicationController@batchReject')->name('api.invoice.applications.batch.reject');
 
+    // 上传相关
+    Route::post('/{id}/upload-info', 'InvoiceApplicationController@submitUpload')->name('api.invoice.applications.upload.info');
+
+    // 历史记录
+    Route::get('/{id}/history', 'InvoiceApplicationController@history')->name('api.invoice.applications.history');
+});
+
+// 发票查询路由
+Route::prefix('invoices')->group(function () {
+    Route::get('/query', 'InvoiceQueryController@index')->name('api.invoices.query');
+    Route::get('/query/statistics', 'InvoiceQueryController@statistics')->name('api.invoices.query.statistics');
+    Route::get('/{id}/download', 'InvoiceQueryController@download')->name('api.invoices.download');
+    Route::get('/{id}/download-records', 'InvoiceQueryController@downloadRecords')->name('api.invoices.download.records');
+    Route::post('/export', 'InvoiceQueryController@export')->name('api.invoices.export');
+});
+
+// 客户相关路由（发票用）
+Route::get('/customers', 'InvoiceApplicationController@getCustomerList')->name('api.customers.list');
+Route::get('/customers/{customerId}/invoice-info', 'InvoiceApplicationController@getCustomerInvoiceInfo')->name('api.customers.invoice.info');
+Route::get('/customers/{customerId}/contracts', 'InvoiceApplicationController@getCustomerContracts')->name('api.customers.contracts');
+
+// 合同相关路由（发票用）
+Route::get('/contracts/{contractId}/invoice-info', 'InvoiceApplicationController@getContractInvoiceInfo')->name('api.contracts.invoice.info');
+
+// 文件上传路由
+Route::post('/upload/invoice', function(\Illuminate\Http\Request $request) {
+    try {
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('invoices', $filename, 'public');
+
+            return response()->json([
+                'code' => 0,
+                'msg' => '上传成功',
+                'data' => [
+                    'url' => '/storage/' . $path,
+                    'path' => $path,
+                    'name' => $filename,
+                ]
+            ]);
+        }
+
+        return response()->json([
+            'code' => 1,
+            'msg' => '没有文件上传',
+            'data' => null
+        ], 400);
+    } catch (\Exception $e) {
+        return response()->json([
+            'code' => 1,
+            'msg' => '上传失败: ' . $e->getMessage(),
+            'data' => null
+        ], 500);
+    }
+})->name('api.upload.invoice');
+
+    // 支出单管理（临时移到公开路由用于测试）
+    // 注意：具体路径的路由必须放在参数化路由之前，避免路由冲突
+    Route::post('/expenses/batch-destroy', 'Api\ExpenseController@batchDestroy')->name('api.expenses.batch.destroy');
+    Route::get('/expenses', 'Api\ExpenseController@index')->name('api.expenses.index');
+    Route::post('/expenses', 'Api\ExpenseController@store')->name('api.expenses.store');
+    Route::post('/expenses/{id}/submit', 'Api\ExpenseController@submit')->name('api.expenses.submit');
+    Route::post('/expenses/{id}/approve', 'Api\ExpenseController@approve')->name('api.expenses.approve');
+    Route::post('/expenses/{id}/reject', 'Api\ExpenseController@reject')->name('api.expenses.reject');
+    Route::get('/expenses/{id}', 'Api\ExpenseController@show')->name('api.expenses.show');
+    Route::put('/expenses/{id}', 'Api\ExpenseController@update')->name('api.expenses.update');
+    Route::delete('/expenses/{id}', 'Api\ExpenseController@destroy')->name('api.expenses.destroy');

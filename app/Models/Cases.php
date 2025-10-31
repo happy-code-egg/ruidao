@@ -117,6 +117,8 @@ class Cases extends Model
         'technical_field',
         'innovation_points',
         'remarks',
+        'cooperative_personnel',
+        'has_risk_clause',
         'created_by',
         'updated_by',
     ];
@@ -150,6 +152,8 @@ class Cases extends Model
         'inventor_info' => 'json',
         'priority_info' => 'json',
         'classification_info' => 'json',
+        'cooperative_personnel' => 'json',
+        'has_risk_clause' => 'integer',
         'created_by' => 'integer',
         'updated_by' => 'integer',
         'created_at' => 'datetime',
