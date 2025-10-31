@@ -18,10 +18,98 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
 
+/**
+ * 客户管理控制器
+ * 
+ * 负责处理客户信息的增删改查、导入导出、业务员分配等功能
+ * 支持多种筛选条件和分页查询
+ * 
+ * @author 系统
+ * @version 1.0
+ */
 class CustomerController extends Controller
 {
     /**
      * 获取客户列表
+     * 
+     * 支持多种筛选条件的客户列表查询，包括基本信息、业务员、地址、企业认证等
+     * 
+     * @param Request $request 请求对象
+     * 
+     * 请求参数：
+     * @param string $name 客户名称（模糊搜索）
+     * @param string $credit_code 信用代码（模糊搜索）
+     * @param string $customer_type 客户类型
+     * @param int $customer_level 客户等级ID
+     * @param int $level 客户等级ID（别名）
+     * @param int $customer_scale 客户规模ID
+     * @param int $innovation_index 创新指数ID
+     * @param int $price_index 价格指数ID
+     * @param string $industrial_park 产业园区名称（模糊搜索）
+     * @param string $industry 行业（模糊搜索）
+     * @param int|array $business_person_id 业务员ID（支持数组）
+     * @param int|array $business_person 业务员ID（别名，支持数组）
+     * @param int $business_assistant_id 业务助理ID
+     * @param int $business_assistant 业务助理ID（别名）
+     * @param int $business_partner_id 业务合作伙伴ID
+     * @param int $business_partner 业务合作伙伴ID（别名）
+     * @param int $company_manager_id 公司经理ID
+     * @param int $company_manager 公司经理ID（别名）
+     * @param int $process_staff_id 流程专员ID
+     * @param int $process_staff 流程专员ID（别名）
+     * @param int $creator_id 创建人ID
+     * @param int $creator 创建人ID（别名）
+     * @param string $customer_status 客户状态
+     * @param string $province 省份
+     * @param string $city 城市
+     * @param string $district 区县
+     * @param int $contract_count1 合同数量最小值
+     * @param int $contract_count2 合同数量最大值
+     * @param int $case_count1 案件数量最小值
+     * @param int $case_count2 案件数量最大值
+     * @param string $customer_no 客户编号（模糊搜索）
+     * @param string $customer_code 客户代码（模糊搜索）
+     * @param string $remark 备注（模糊搜索）
+     * @param string $remarks 备注（别名，模糊搜索）
+     * @param int|string $park_id 园区ID或名称
+     * @param string $economic_category 国民经济行业分类
+     * @param string $economic_door 国民经济门类（模糊搜索）
+     * @param string $economic_big_class 国民经济大类（模糊搜索）
+     * @param string $economic_mid_class 国民经济中类（模糊搜索）
+     * @param string $economic_small_class 国民经济小类（模糊搜索）
+     * @param string $high_tech_enterprise 高新技术企业（1/0）
+     * @param string $province_enterprise 省级企业（1/0）
+     * @param string $city_enterprise 市级企业（1/0）
+     * @param string $province_tech_center 省级技术中心（1/0）
+     * @param string $ip_standard IP标准（1/0）
+     * @param string $it_standard IT标准（1/0）
+     * @param string $type 客户类型筛选（my/dept/public/all）
+     * @param bool $my_customers_only 是否只查看我的客户
+     * @param string $tab_type 标签类型（myCustomer/assistCustomer/assistantCustomer）
+     * @param bool $department_filter 是否按部门筛选
+     * @param string $start_date 开始日期
+     * @param string $end_date 结束日期
+     * @param string $latest_contract_date_start 最新合同开始日期
+     * @param string $latest_contract_date_end 最新合同结束日期
+     * @param string $create_date_start 创建开始日期
+     * @param string $create_date_end 创建结束日期
+     * @param string $update_date_start 更新开始日期
+     * @param string $update_date_end 更新结束日期
+     * @param int $page_size 每页数量（默认10）
+     * @param int $page 页码（默认1）
+     * 
+     * 返回参数：
+     * @return \Illuminate\Http\JsonResponse {
+     *     @type bool $success 操作是否成功
+     *     @type string $message 返回消息
+     *     @type array $data {
+     *         @type array $list 客户列表数组
+     *         @type int $total 总记录数
+     *         @type int $per_page 每页数量
+     *         @type int $current_page 当前页码
+     *         @type int $last_page 最后页码
+     *     }
+     * }
      */
     public function index(Request $request)
     {
@@ -433,6 +521,84 @@ class CustomerController extends Controller
 
     /**
      * 创建客户
+     * 
+     * 创建新的客户记录，支持完整的客户信息录入
+     * 
+     * @param Request $request 请求对象
+     * 
+     * 请求参数：
+     * @param string $name 客户名称（必填）
+     * @param string $customer_name 客户名称（可选）
+     * @param string $name_en 英文名称
+     * @param string $customer_code 客户编号（系统自动生成）
+     * @param string $credit_code 信用代码（必填，唯一）
+     * @param string $legal_representative 法定代表人
+     * @param string $company_manager 公司经理
+     * @param int $level 客户等级
+     * @param string $employee_count 员工数量
+     * @param int $business_person 业务员ID
+     * @param string $business_assistant 业务助理
+     * @param string $business_partner 业务合作伙伴
+     * @param int $price_index 价格指数ID
+     * @param int $innovation_index 创新指数ID
+     * @param string $contract_count 合同数量
+     * @param string $latest_contract_date 最新合同日期
+     * @param string $creator 创建人
+     * @param string $create_date 创建日期
+     * @param string $updater 更新人
+     * @param string $update_time 更新时间
+     * @param string $remark 备注
+     * @param string $contact_name 联系人姓名
+     * @param string $contactName 联系人姓名（驼峰命名）
+     * @param string $contact_phone 联系电话
+     * @param string $contactPhone 联系电话（驼峰命名）
+     * @param string $email 邮箱地址
+     * @param string $qq QQ号码
+     * @param string $wechat 微信号
+     * @param string $country 国家
+     * @param string $province 省份
+     * @param string $city 城市
+     * @param string $district 区县
+     * @param string $address 详细地址
+     * @param string $address_en 英文地址
+     * @param string $other_address 其他地址
+     * @param string $industrial_park 产业园区
+     * @param string $zip_code 邮政编码
+     * @param string $website 网站地址
+     * @param string $account_name 账户名称
+     * @param string $bank_name 银行名称
+     * @param string $bank_account 银行账号
+     * @param string $invoice_address 发票地址
+     * @param string $invoice_phone 发票电话
+     * @param bool $is_general_taxpayer 是否一般纳税人
+     * @param string $billing_address 账单地址
+     * @param string $company_type 公司类型
+     * @param string $registered_capital 注册资本
+     * @param string $founding_date 成立日期
+     * @param string $industry 行业
+     * @param string $main_products 主要产品
+     * @param string $business_scope 经营范围
+     * @param string $economic_category 国民经济行业分类
+     * @param string $economic_door 国民经济门类
+     * @param string $economic_big_class 国民经济大类
+     * @param string $economic_mid_class 国民经济中类
+     * @param string $economic_small_class 国民经济小类
+     * @param string $research_staff_count 研发人员数量
+     * @param string $doctor_count 博士数量
+     * @param string $senior_engineer_count 高级工程师数量
+     * @param string $master_count 硕士数量
+     * @param string $middle_engineer_count 中级工程师数量
+     * 
+     * 返回参数：
+     * @return \Illuminate\Http\JsonResponse {
+     *     @type bool $success 操作是否成功
+     *     @type string $message 返回消息
+     *     @type array $data {
+     *         @type int $id 新创建的客户ID
+     *         @type string $customer_code 客户编号
+     *         @type string $customer_name 客户名称
+     *     }
+     * }
      */
     public function store(Request $request)
     {
@@ -745,24 +911,62 @@ class CustomerController extends Controller
     /**
      * 获取客户详情
      */
+    /**
+     * 获取客户详情
+     * 
+     * @param int $id 客户ID
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     * 
+     * 返回参数:
+     * - success: boolean 操作是否成功
+     * - message: string 操作消息
+     * - data: object 客户详细信息
+     *   - id: integer 客户ID
+     *   - customer_name: string 客户名称
+     *   - customer_code: string 客户编号
+     *   - credit_code: string 统一社会信用代码
+     *   - legal_representative: string 法定代表人
+     *   - level: integer 客户级别
+     *   - scale: integer 客户规模
+     *   - business_person: integer 业务人员ID
+     *   - business_assistant: string 业务助理
+     *   - business_partner: string 业务合伙人
+     *   - company_manager: string 公司经理
+     *   - contacts: array 联系人列表
+     *   - applicants: array 申请人列表
+     *   - inventors: array 发明人列表
+     *   - opportunities: array 商机列表
+     *   - contracts: array 合同列表
+     *   - followupRecords: array 跟进记录列表
+     *   - relatedPersons: array 相关人员列表
+     *   - files: array 文件列表
+     *   - businessPerson: object 业务人员信息
+     *   - businessAssistant: object 业务助理信息
+     *   - businessPartner: object 业务合伙人信息
+     *   - companyManager: object 公司经理信息
+     *   - creator: object 创建者信息
+     *   - updater: object 更新者信息
+     */
     public function show($id)
     {
         try {
+            // 查询客户信息，包含所有关联数据
             $customer = Customer::with([
-                'contacts', 
-                'applicants',
-                'inventors',
-                'opportunities',
-                'contracts',
-                'followupRecords',
-                'relatedPersons',
-                'files',
-                'businessPerson', 
-                'businessAssistant', 
-                'businessPartner', 
-                'companyManager',
-                'creator',
-                'updater'
+                'contacts',         // 联系人
+                'applicants',       // 申请人
+                'inventors',        // 发明人
+                'opportunities',    // 商机
+                'contracts',        // 合同
+                'followupRecords',  // 跟进记录
+                'relatedPersons',   // 相关人员
+                'files',           // 文件
+                'businessPerson',   // 业务人员
+                'businessAssistant', // 业务助理
+                'businessPartner',  // 业务合伙人
+                'companyManager',   // 公司经理
+                'creator',         // 创建者
+                'updater'          // 更新者
             ])->findOrFail($id);
 
             return response()->json([
@@ -780,13 +984,76 @@ class CustomerController extends Controller
     }
 
     /**
-     * 更新客户
+     * 更新客户信息
+     * 
+     * @param \Illuminate\Http\Request $request 请求对象
+     * @param int $id 客户ID
+     * 
+     * 请求参数:
+     * - name: string 客户名称
+     * - customer_name: string 客户名称（备用字段）
+     * - name_en: string 英文名称
+     * - credit_code: string 统一社会信用代码（必填，唯一）
+     * - legal_representative: string 法定代表人
+     * - company_manager: string 公司经理
+     * - level: integer 客户级别
+     * - employee_count: string 员工数量
+     * - business_person: integer 业务人员ID
+     * - business_assistant: string 业务助理
+     * - business_partner: string 业务合伙人
+     * - price_index: integer 价格指数
+     * - innovation_index: integer 创新指数
+     * - contact_name: string 联系人姓名
+     * - contact_phone: string 联系电话
+     * - email: string 邮箱
+     * - qq: string QQ号
+     * - wechat: string 微信号
+     * - province: string 省份
+     * - city: string 城市
+     * - district: string 区县
+     * - address: string 详细地址
+     * - industrial_park: string 产业园区
+     * - account_name: string 开户名称
+     * - bank_name: string 开户银行
+     * - bank_account: string 银行账号
+     * - company_type: string 公司类型
+     * - registered_capital: string 注册资本
+     * - founding_date: date 成立日期
+     * - industry: string 所属行业
+     * - economic_category: string 国民经济行业分类
+     * - trademark_count: integer 商标数量
+     * - patent_count: integer 专利数量
+     * - invention_patent_count: integer 发明专利数量
+     * - copyright_count: integer 著作权数量
+     * - is_jinxin_verified: string 是否通过金信认证
+     * - high_tech_enterprise: string 是否高新技术企业
+     * - remark: string 备注
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     * 
+     * 返回参数:
+     * - success: boolean 操作是否成功
+     * - message: string 操作消息
+     * - data: object 更新后的客户信息
+     *   - id: integer 客户ID
+     *   - customer_name: string 客户名称
+     *   - customer_code: string 客户编号
+     *   - credit_code: string 统一社会信用代码
+     *   - legal_representative: string 法定代表人
+     *   - level: integer 客户级别
+     *   - business_person_id: integer 业务人员ID
+     *   - contact_name: string 联系人姓名
+     *   - contact_phone: string 联系电话
+     *   - address: string 地址
+     *   - updated_at: string 更新时间
      */
     public function update(Request $request, $id)
     {
         try {
+            // 查找要更新的客户
             $customer = Customer::findOrFail($id);
 
+            // 验证请求数据
             $validator = Validator::make($request->all(), [
                 // 基本信息验证
                 'name' => 'nullable|string|max:200',
@@ -1066,10 +1333,19 @@ class CustomerController extends Controller
 
     /**
      * 删除客户
+     * 
+     * @param int $id 客户ID
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     * 
+     * 返回参数:
+     * - success: boolean 操作是否成功
+     * - message: string 操作消息
      */
     public function destroy($id)
     {
         try {
+            // 查找并删除客户
             $customer = Customer::findOrFail($id);
             $customer->delete();
 
@@ -1088,12 +1364,25 @@ class CustomerController extends Controller
 
     /**
      * 批量删除客户
+     * 
+     * @param \Illuminate\Http\Request $request 请求对象
+     * 
+     * 请求参数:
+     * - ids: array 要删除的客户ID数组
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     * 
+     * 返回参数:
+     * - success: boolean 操作是否成功
+     * - message: string 操作消息
      */
     public function batchDestroy(Request $request)
     {
         try {
+            // 获取要删除的客户ID数组
             $ids = $request->input('ids', []);
             
+            // 验证是否选择了要删除的客户
             if (empty($ids)) {
                 return response()->json([
                     'success' => false,
@@ -1101,6 +1390,7 @@ class CustomerController extends Controller
                 ], 422);
             }
 
+            // 批量删除客户
             Customer::whereIn('id', $ids)->delete();
 
             return response()->json([
@@ -1118,10 +1408,24 @@ class CustomerController extends Controller
 
     /**
      * 转移客户
+     * 
+     * @param \Illuminate\Http\Request $request 请求对象
+     * 
+     * 请求参数:
+     * - customer_ids: array 要转移的客户ID数组（必填）
+     * - to_user_id: integer 目标用户ID（必填）
+     * - reason: string 转移原因（可选）
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     * 
+     * 返回参数:
+     * - success: boolean 操作是否成功
+     * - message: string 操作消息
      */
     public function transfer(Request $request)
     {
         try {
+            // 验证请求参数
             $validator = Validator::make($request->all(), [
                 'customer_ids' => 'required|array',
                 'customer_ids.*' => 'integer|exists:customers,id',
@@ -1137,9 +1441,11 @@ class CustomerController extends Controller
                 ], 422);
             }
 
+            // 获取转移参数
             $customerIds = $request->customer_ids;
             $toUserId = $request->to_user_id;
             
+            // 批量更新客户的业务人员
             Customer::whereIn('id', $customerIds)->update([
                 'business_person_id' => $toUserId,
                 'updated_by' => auth()->id(),
@@ -1161,12 +1467,25 @@ class CustomerController extends Controller
 
     /**
      * 移入公海
+     * 
+     * @param \Illuminate\Http\Request $request 请求对象
+     * 
+     * 请求参数:
+     * - customer_ids: array 要移入公海的客户ID数组
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     * 
+     * 返回参数:
+     * - success: boolean 操作是否成功
+     * - message: string 操作消息
      */
     public function moveToPublic(Request $request)
     {
         try {
+            // 获取要移入公海的客户ID数组
             $customerIds = $request->input('customer_ids', []);
             
+            // 验证是否选择了客户
             if (empty($customerIds)) {
                 return response()->json([
                     'success' => false,
@@ -1174,6 +1493,7 @@ class CustomerController extends Controller
                 ], 422);
             }
 
+            // 将客户的业务人员设为空，移入公海
             Customer::whereIn('id', $customerIds)->update([
                 'business_person_id' => null,
                 'updated_by' => auth()->id(),
@@ -1510,9 +1830,36 @@ class CustomerController extends Controller
     /**
      * 导出客户数据
      */
+    /**
+     * 导出客户数据
+     * 
+     * @param \Illuminate\Http\Request $request 请求对象
+     * 
+     * 请求参数:
+     * - name: string 客户名称（模糊查询）
+     * - creditCode: string 信用代码（模糊查询）
+     * - level: integer 客户级别
+     * - customerScale: integer 客户规模
+     * - businessPerson: array|integer 业务人员ID
+     * - province: string 省份
+     * - city: string 城市
+     * - district: string 区县
+     * - industrialPark: string 产业园区（模糊查询）
+     * - innovationIndex: integer 创新指数
+     * - priceIndex: integer 价格指数
+     * - create_date_start: string 创建开始日期
+     * - create_date_end: string 创建结束日期
+     * - latest_contract_date_start: string 最新合同开始日期
+     * - latest_contract_date_end: string 最新合同结束日期
+     * - format: string 导出格式（csv|xlsx，默认csv）
+     * - filename: string 文件名（可选）
+     * 
+     * @return \Illuminate\Http\Response 文件下载响应
+     */
     public function export(Request $request)
     {
         try {
+            // 构建查询条件
             $query = Customer::query();
 
             // 应用查询条件（与index方法一致）
@@ -1575,6 +1922,7 @@ class CustomerController extends Controller
 
             // 准备导出数据
             $exportData = [];
+            // 设置表头
             $exportData[] = [
                 '客户编号', '客户名称', '英文名称', '信用代码', '客户等级', '法定代表人',
                 '公司负责人', '员工数量', '行业', '业务人员', '业务助理', '业务协作人',
@@ -1731,10 +2079,37 @@ class CustomerController extends Controller
 
     /**
      * 导入客户数据
+     * 
+     * @param \Illuminate\Http\Request $request 请求对象
+     * 
+     * 请求参数:
+     * - file: file CSV文件（必填）
+     * 
+     * CSV文件格式要求:
+     * - 文件大小不超过10MB
+     * - 文件类型必须为CSV或TXT
+     * - 必填字段：客户名称、联系人、联系电话、省、市
+     * - 支持字段：客户编号、客户名称、英文名称、信用代码、客户等级、法定代表人、
+     *   公司负责人、员工数量、行业、业务人员、业务助理、业务协作人、联系人、
+     *   联系电话、邮箱、QQ、微信、国家、省、市、区、地址、英文地址、产业园区、
+     *   邮编、网站、价格指数、创新指数、备注等
+     * 
+     * 返回参数:
+     * - success: boolean 操作是否成功
+     * - message: string 操作结果消息
+     * - data: object 导入结果详情
+     *   - success_count: integer 成功导入数量
+     *   - error_count: integer 失败数量
+     *   - error_rows: array 失败行详情
+     *     - row: integer 行号
+     *     - error: string 错误信息
+     * 
+     * @return \Illuminate\Http\JsonResponse JSON响应
      */
     public function import(Request $request)
     {
         try {
+            // 验证上传文件
             $validator = Validator::make($request->all(), [
                 'file' => 'required|file|mimes:csv,txt|max:10240', // 最大10MB
             ]);
@@ -1865,6 +2240,25 @@ class CustomerController extends Controller
      * 格式：KH + 年月日 + 6位随机数字 + 2位校验码
      * 例如：KH20250818123456AB
      */
+    /**
+     * 生成客户编码
+     * 
+     * 编码格式：KH + 年月日 + 6位随机数字 + 2位校验码
+     * 例如：KH20250118123456AB
+     * 
+     * 生成规则：
+     * 1. 前缀：KH（客户的拼音首字母）
+     * 2. 日期：当前年月日（YYYYMMDD格式）
+     * 3. 随机数：6位随机数字（000000-999999）
+     * 4. 校验码：基于前面内容生成的2位字母数字校验码
+     * 
+     * 唯一性保证：
+     * - 使用数据库事务确保并发安全
+     * - 最多尝试10次生成不重复编码
+     * - 如果10次都重复，使用时间戳作为后备方案
+     * 
+     * @return string 生成的客户编码
+     */
     private function generateCustomerCode()
     {
         return DB::transaction(function () {
@@ -1881,7 +2275,7 @@ class CustomerController extends Controller
 
                 $newCode = $baseCode . $checksum;
 
-                // 检查是否已存在
+                // 检查是否已存在（使用悲观锁防止并发问题）
                 $exists = Customer::where('customer_code', $newCode)->lockForUpdate()->exists();
                 if (!$exists) {
                     return $newCode;
@@ -1896,7 +2290,16 @@ class CustomerController extends Controller
 
     /**
      * 生成校验码
-     * 基于输入字符串生成2位字母数字校验码
+     * 
+     * 基于输入字符串使用CRC32算法生成2位字母数字校验码
+     * 
+     * 算法说明：
+     * 1. 对输入字符串计算CRC32哈希值
+     * 2. 使用36进制字符集（0-9A-Z）
+     * 3. 通过取模和除法运算生成2位校验码
+     * 
+     * @param string $input 需要生成校验码的输入字符串
+     * @return string 2位字母数字校验码
      */
     private function generateChecksum($input)
     {
@@ -2236,6 +2639,14 @@ class CustomerController extends Controller
 
     /**
      * 获取客户等级名称
+     * 
+     * 获取客户等级的显示名称，支持多种数据源：
+     * 1. 优先从关联关系 customerLevel 获取
+     * 2. 如果关联关系为空，直接查询 CustomerLevel 表
+     * 3. 如果查询失败，使用默认映射表
+     * 
+     * @param \App\Models\Customer $customer 客户对象
+     * @return string 客户等级名称
      */
     private function getCustomerLevelName($customer)
     {
@@ -2265,6 +2676,14 @@ class CustomerController extends Controller
 
     /**
      * 获取客户规模名称
+     * 
+     * 获取客户规模的显示名称，支持多种数据源：
+     * 1. 优先从关联关系 customerScale 获取
+     * 2. 如果关联关系为空，直接查询 CustomerScale 表
+     * 3. 如果查询失败，使用默认映射表
+     * 
+     * @param \App\Models\Customer $customer 客户对象
+     * @return string 客户规模名称
      */
     private function getCustomerScaleName($customer)
     {
@@ -2362,6 +2781,15 @@ class CustomerController extends Controller
 
     /**
      * 确保配置数据存在
+     * 
+     * 检查并创建必要的配置数据，包括客户等级和客户规模
+     * 如果相关配置表为空，则自动创建默认数据
+     * 
+     * 创建的默认数据：
+     * - 客户等级：重要客户、一般客户、潜在客户
+     * - 客户规模：大型企业、中型企业、小微企业、初创企业、央企、国企
+     * 
+     * @return void
      */
     private function ensureConfigData()
     {
@@ -2438,6 +2866,15 @@ class CustomerController extends Controller
 
     /**
      * 获取客户业务员显示文本
+     * 
+     * 获取客户关联的所有业务员姓名，并以逗号分隔的字符串形式返回
+     * 
+     * 查找逻辑：
+     * 1. 优先从 customer_related_persons 关联表获取业务员
+     * 2. 如果关联表为空，使用传统的 business_person_id 字段
+     * 
+     * @param \App\Models\Customer $customer 客户对象
+     * @return string 业务员姓名列表（逗号分隔）
      */
     private function getBusinessPersonsDisplay($customer)
     {
@@ -2567,6 +3004,21 @@ class CustomerController extends Controller
 
     /**
      * 生成项目编码
+     * 
+     * 根据项目类型生成唯一的项目编码
+     * 
+     * 编码格式：前缀 + 日期 + 4位序号
+     * 例如：PAT202501180001
+     * 
+     * 项目类型前缀映射：
+     * - 1: PAT (专利)
+     * - 2: TRA (商标)
+     * - 3: COP (版权)
+     * - 4: SER (科服)
+     * - 其他: CAS (通用)
+     * 
+     * @param int $caseType 项目类型
+     * @return string 生成的项目编码
      */
     private function generateCaseCode($caseType)
     {
