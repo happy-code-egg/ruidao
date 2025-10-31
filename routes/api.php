@@ -703,7 +703,7 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     // 代理师管理
     Route::get('/agents', 'AgentController@index')->name('api.agents.index');// 获取代理师列表
     Route::get('/agents/agencies', 'AgentController@getAgencies')->name('api.agents.agencies');
-    Route::post('/agents', 'AgentController@store')->name('api.agents.store');
+    Route::post('/agents', 'AgentController@store')->name('api.agents.store');//创建代理师
     Route::get('/agents/{id}', 'AgentController@show')->name('api.agents.show');
     Route::put('/agents/{id}', 'AgentController@update')->name('api.agents.update');//更新代理是列表
     Route::delete('/agents/{id}', 'AgentController@destroy')->name('api.agents.destroy');
