@@ -19,27 +19,45 @@ Route::group(['namespace' => 'Api'], function () {
     Route::post('/login', 'AuthController@login')->name('login');
 
         // 基础数据接口（无需特殊权限）
+        // 获取部门列表接口 - 返回启用状态的部门信息，用于下拉选择组件，包含部门ID和名称
         Route::get('/departments/simple', 'UserController@getDepartments')->name('api.departments.simple');
+        // 获取所有角色列表接口 - 返回系统中所有角色信息，用于用户角色分配和权限管理，包含角色ID和名称
         Route::get('/roles/all', 'RoleController@getAllRoles')->name('api.roles.all');
 
     // 代理机构管理（临时移到公开路由用于测试）
+    // 获取代理机构列表接口 - 支持按机构名称、国家、有效性筛选，返回分页数据
     Route::get('/agencies', 'AgencyController@index')->name('api.agencies.index');
+    // 获取国家选项接口 - 返回预定义的国家列表，用于代理机构管理的下拉选择
     Route::get('/agencies/countries', 'AgencyController@getCountries')->name('api.agencies.countries');
+    // 创建代理机构接口 - 新增代理机构信息，包含中英文名称、国家、联系方式等完整信息
     Route::post('/agencies', 'AgencyController@store')->name('api.agencies.store');
+    // 获取代理机构详情接口 - 根据ID获取单个代理机构的完整信息
     Route::get('/agencies/{id}', 'AgencyController@show')->name('api.agencies.show');
+    // 更新代理机构接口 - 修改指定代理机构的信息，支持部分字段更新
     Route::put('/agencies/{id}', 'AgencyController@update')->name('api.agencies.update');
+    // 删除代理机构接口 - 根据ID删除指定的代理机构记录
     Route::delete('/agencies/{id}', 'AgencyController@destroy')->name('api.agencies.destroy');
 
     // 工作流管理（临时移到公开路由用于测试）
+    // 获取工作流列表接口 - 支持分页、搜索和项目类型筛选，返回工作流基本信息
     Route::get('/workflows', 'WorkflowController@index')->name('api.workflows.index');
+    // 获取项目类型选项接口 - 返回可用的项目类型列表，用于工作流配置下拉框
     Route::get('/workflows/case-types', 'WorkflowController@getCaseTypes')->name('api.workflows.case.types');
+    // 获取可分配用户列表接口 - 返回按部门分组的用户列表，用于工作流节点人员配置
     Route::get('/workflows/assignable-users', 'WorkflowController@getAssignableUsers')->name('api.workflows.assignable.users');
+    // 创建工作流接口 - 新建工作流，需要提供名称、代码、项目类型和节点配置信息
     Route::post('/workflows', 'WorkflowController@store')->name('api.workflows.store');
+    // 获取工作流详情接口 - 根据ID获取指定工作流的完整信息，包括节点配置
     Route::get('/workflows/{id}', 'WorkflowController@show')->name('api.workflows.show');
+    // 更新工作流接口 - 修改工作流配置，可更新状态和节点信息
     Route::put('/workflows/{id}', 'WorkflowController@update')->name('api.workflows.update');
+    // 删除工作流接口 - 根据ID删除指定的工作流
     Route::delete('/workflows/{id}', 'WorkflowController@destroy')->name('api.workflows.destroy');
+    // 切换工作流状态接口 - 启用或禁用指定工作流
     Route::put('/workflows/{id}/toggle-status', 'WorkflowController@toggleStatus')->name('api.workflows.toggle.status');
+    // 获取工作流节点配置接口 - 获取指定工作流的节点配置信息
     Route::get('/workflows/{id}/nodes', 'WorkflowController@getNodes')->name('api.workflows.nodes');
+    // 更新工作流节点配置接口 - 修改指定工作流的节点配置
     Route::put('/workflows/{id}/nodes', 'WorkflowController@updateNodes')->name('api.workflows.update.nodes');
 
     // 流程配置专用API（避免与其他workflow接口冲突）
