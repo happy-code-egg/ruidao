@@ -705,7 +705,7 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     Route::get('/agents/agencies', 'AgentController@getAgencies')->name('api.agents.agencies');
     Route::post('/agents', 'AgentController@store')->name('api.agents.store');
     Route::get('/agents/{id}', 'AgentController@show')->name('api.agents.show');
-    Route::put('/agents/{id}', 'AgentController@update')->name('api.agents.update');
+    Route::put('/agents/{id}', 'AgentController@update')->name('api.agents.update');//更新代理是列表
     Route::delete('/agents/{id}', 'AgentController@destroy')->name('api.agents.destroy');
 
     // 数据配置管理
