@@ -701,7 +701,7 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     // 代理机构管理已移至公开路由
 
     // 代理师管理
-    Route::get('/agents', 'AgentController@index')->name('api.agents.index');
+    Route::get('/agents', 'AgentController@index')->name('api.agents.index');// 获取代理师列表
     Route::get('/agents/agencies', 'AgentController@getAgencies')->name('api.agents.agencies');
     Route::post('/agents', 'AgentController@store')->name('api.agents.store');
     Route::get('/agents/{id}', 'AgentController@show')->name('api.agents.show');
