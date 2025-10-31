@@ -12,6 +12,21 @@ class BusinessServiceTypesController extends BaseDataConfigController
         return BusinessServiceTypes::class;
     }
 
+    /**
+    获取业务服务类型的验证规则
+    验证规则说明：
+    区分新增和更新操作，更新时忽略当前记录的编码唯一性
+    核心字段必填，非必填字段限制格式或长度
+    请求参数验证规则：
+    name（服务类型名称）：必填，字符串，最大长度 100 字符
+    code（服务类型编码）：可选，字符串，最大长度 50 字符，新增时需唯一，更新时忽略自身唯一性
+    description（描述）：可选，字符串，无长度限制
+    status（状态）：必填，整数，仅允许值为 0（禁用）或 1（启用）
+    sort_order（排序）：可选，整数，最小值 0，用于列表排序
+    category（业务类别）：必填，字符串，最大长度 50 字符，服务类型所属的业务类别
+    @param bool $isUpdate 是否为更新操作，默认 false（新增操作）
+    @return array 验证规则数组
+     */
     protected function getValidationRules($isUpdate = false)
     {
         $rules = [
@@ -44,7 +59,24 @@ class BusinessServiceTypesController extends BaseDataConfigController
     }
 
     /**
-     * 重写 index 以支持 name/category/status 搜索
+    重写 index 方法，支持按名称、业务类别、状态搜索业务服务类型列表
+    请求参数：
+    name（服务类型名称）：可选，字符串，非空时模糊匹配服务类型名称
+    category（业务类别）：可选，字符串 / 整数，非空时精确筛选对应业务类别的服务类型
+    status（状态）：可选，整数，非空时筛选对应状态的服务类型（如 0 = 禁用、1 = 启用等，需结合业务实际状态定义）
+    page（页码）：可选，整数，默认 1，最小值 1，指定分页页码
+    limit（每页条数）：可选，整数，默认 15，最小值 1、最大值 100，指定分页每页显示的记录数
+    返回参数：
+    success（操作状态）：布尔值，true 表示成功，false 表示失败
+    message（提示信息）：字符串，获取列表结果的描述信息
+    data（列表数据）：对象，包含以下字段：
+    list（服务类型列表）：数组，包含业务服务类型详情对象，字段包括 id、name、category、status、sort_order 等表中字段
+    total（总条数）：整数，符合条件的业务服务类型总记录数
+    page（当前页码）：整数，当前分页的页码
+    limit（每页条数）：整数，当前分页每页显示的记录数
+    pages（总页数）：整数，分页的总页数（向上取整计算）
+    @param Request $request 请求对象，包含搜索参数和分页参数
+    @return \Illuminate\Http\JsonResponse JSON 响应，包含业务服务类型列表及分页信息
      */
     public function index(Request $request)
     {
