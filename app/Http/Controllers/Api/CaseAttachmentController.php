@@ -71,7 +71,7 @@ class CaseAttachmentController extends Controller
     public function upload(Request $request, $caseId)
     {
         try {
-            // 验证用户认证
+            // 验证用户认证 - 检查用户是否已登录
             if (!auth()->check()) {
                 return response()->json([
                     'success' => false,
@@ -79,9 +79,10 @@ class CaseAttachmentController extends Controller
                 ], 401);
             }
 
-            // 验证项目是否存在
+            // 验证项目是否存在 - 确保关联的项目记录存在
             $case = Cases::findOrFail($caseId);
 
+            // 验证请求参数 - 对上传文件和相关字段进行验证
             $validator = Validator::make($request->all(), [
                 'file' => 'required|file|max:20480', // 最大20MB
                 'file_type' => 'required|string|max:100',
@@ -89,6 +90,7 @@ class CaseAttachmentController extends Controller
                 'file_desc' => 'required|string|max:500',
             ]);
 
+            // 如果验证失败，返回错误信息
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
@@ -97,20 +99,27 @@ class CaseAttachmentController extends Controller
                 ], 422);
             }
 
+            // 处理文件上传 - 获取上传的文件对象
             $file = $request->file('file');
+
+            // 生成唯一的文件名 - 使用时间戳+原文件名避免重复
             $fileName = time() . '_' . $file->getClientOriginalName();
+
+            // 存储文件到指定目录 - 按项目ID分目录存储，使用public磁盘
             $filePath = $file->storeAs('cases/' . $caseId, $fileName, 'public');
 
+            // 创建附件记录 - 将文件信息保存到数据库
             $attachment = CaseAttachment::create([
-                'case_id' => $caseId,
-                'file_type' => $request->file_type,
-                'file_sub_type' => $request->file_sub_type,
-                'file_desc' => $request->file_desc,
-                'file_name' => $file->getClientOriginalName(),
-                'file_path' => $filePath,
-                'file_size' => $file->getSize(),
+                'case_id' => $caseId,                    // 关联的项目ID
+                'file_type' => $request->file_type,      // 文件类型
+                'file_sub_type' => $request->file_sub_type, // 文件子类型
+                'file_desc' => $request->file_desc,      // 文件描述
+                'file_name' => $file->getClientOriginalName(), // 原始文件名
+                'file_path' => $filePath,                // 文件存储路径
+                'file_size' => $file->getSize(),         // 文件大小（字节）
             ]);
 
+            // 返回上传成功的响应
             return response()->json([
                 'success' => true,
                 'message' => '上传成功',
@@ -118,6 +127,7 @@ class CaseAttachmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            // 异常处理 - 捕获并返回上传过程中的错误
             return response()->json([
                 'success' => false,
                 'message' => '上传失败：' . $e->getMessage()

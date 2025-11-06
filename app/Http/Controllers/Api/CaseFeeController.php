@@ -126,8 +126,11 @@ class CaseFeeController extends Controller
 //
 
     /**
-     * 删除指定的案件费用记录
- */
+     * 删除指定ID的案件费用记录
+     *
+     * @param int $id 要删除的案件费用记录ID
+     * @return \Illuminate\Http\JsonResponse 返回删除成功的JSON响应
+     */
     public function destroy($id)
     {
         $fee = CaseFee::findOrFail($id);

@@ -12,7 +12,28 @@ use Illuminate\Support\Facades\DB;
 class ExpenseController extends Controller
 {
     /**
-     * 获取支出单列表
+     * 获取支出单列表 index
+     *
+     * 功能描述：根据搜索条件获取支出单列表，支持分页和多种筛选条件
+     *
+     * 传入参数：
+     * - expense_no (string, optional): 支出单号搜索关键词
+     * - expense_name (string, optional): 支出单名称搜索关键词
+     * - customer_name (string, optional): 客户名称搜索关键词
+     * - status (string, optional): 支出单状态筛选
+     * - start_date (string, optional): 支出日期起始时间
+     * - end_date (string, optional): 支出日期结束时间
+     * - page (int, optional): 页码，默认为1
+     * - per_page (int, optional): 每页数量，默认为10
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功，1表示失败
+     * - data (object): 返回数据
+     *   - items (array): 支出单列表数据
+     *   - total (int): 总记录数
+     *   - page (int): 当前页码
+     *   - per_page (int): 每页数量
+     * - msg (string): 操作结果消息
      */
     public function index(Request $request)
     {
@@ -71,7 +92,17 @@ class ExpenseController extends Controller
     }
 
     /**
-     * 获取支出单详情
+     * 获取支出单详情 show
+     *
+     * 功能描述：根据ID获取支出单的详细信息，包括关联的项目和历史记录
+     *
+     * 传入参数：
+     * - id (int): 支出单ID
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功，1表示失败
+     * - data (object): 支出单详细信息，包含items和history关联数据
+     * - msg (string): 操作结果消息
      */
     public function show($id)
     {
@@ -101,7 +132,25 @@ class ExpenseController extends Controller
     }
 
     /**
-     * 创建支出单
+     * 创建支出单 store
+     *
+     * 功能描述：创建新的支出单记录，包含基本信息、项目明细和操作历史
+     *
+     * 传入参数：
+     * - expense_name (string): 支出单名称
+     * - customer_id (int): 客户ID
+     * - customer_name (string): 客户名称
+     * - company_id (int): 公司ID
+     * - company_name (string): 公司名称
+     * - total_amount (float, optional): 总金额
+     * - expense_date (string): 支出日期
+     * - remark (string, optional): 备注
+     * - items (array, optional): 支出项目列表
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功，1表示失败
+     * - data (object): 创建成功的支出单信息
+     * - msg (string): 操作结果消息
      */
     public function store(Request $request)
     {
@@ -162,7 +211,26 @@ class ExpenseController extends Controller
     }
 
     /**
-     * 更新支出单
+     * 更新支出单 update
+     *
+     * 功能描述：更新指定ID的支出单信息，包括基本信息和项目明细
+     *
+     * 传入参数：
+     * - id (int): 支出单ID
+     * - expense_name (string): 支出单名称
+     * - customer_id (int): 客户ID
+     * - customer_name (string): 客户名称
+     * - company_id (int): 公司ID
+     * - company_name (string): 公司名称
+     * - total_amount (float, optional): 总金额
+     * - expense_date (string): 支出日期
+     * - remark (string, optional): 备注
+     * - items (array, optional): 支出项目列表
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功，1表示失败
+     * - data (object): 更新后的支出单信息
+     * - msg (string): 操作结果消息
      */
     public function update(Request $request, $id)
     {
@@ -226,7 +294,17 @@ class ExpenseController extends Controller
     }
 
     /**
-     * 删除支出单
+     * 删除支出单 destroy
+     *
+     * 功能描述：删除指定ID的支出单记录
+     *
+     * 传入参数：
+     * - id (int): 支出单ID
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功，1表示失败
+     * - data (null): 空数据
+     * - msg (string): 操作结果消息
      */
     public function destroy($id)
     {
@@ -257,7 +335,17 @@ class ExpenseController extends Controller
     }
 
     /**
-     * 批量删除支出单
+     * 批量删除支出单 batchDestroy
+     *
+     * 功能描述：批量删除多个支出单记录
+     *
+     * 传入参数：
+     * - ids (array): 要删除的支出单ID数组
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功，1表示失败
+     * - data (null): 空数据
+     * - msg (string): 操作结果消息
      */
     public function batchDestroy(Request $request)
     {
@@ -288,7 +376,17 @@ class ExpenseController extends Controller
     }
 
     /**
-     * 提交支出单
+     * 提交支出单 submit
+     *
+     * 功能描述：将支出单状态更新为已提交状态
+     *
+     * 传入参数：
+     * - id (int): 支出单ID
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功，1表示失败
+     * - data (object): 提交后的支出单信息
+     * - msg (string): 操作结果消息
      */
     public function submit(Request $request, $id)
     {
@@ -332,7 +430,18 @@ class ExpenseController extends Controller
     }
 
     /**
-     * 审批支出单
+     * 审批支出单 approve
+     *
+     * 功能描述：审批通过支出单，将状态更新为已批准
+     *
+     * 传入参数：
+     * - id (int): 支出单ID
+     * - remark (string, optional): 审批备注
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功，1表示失败
+     * - data (object): 审批后的支出单信息
+     * - msg (string): 操作结果消息
      */
     public function approve(Request $request, $id)
     {
@@ -376,7 +485,18 @@ class ExpenseController extends Controller
     }
 
     /**
-     * 拒绝支出单
+     * 拒绝支出单 reject
+     *
+     * 功能描述：拒绝支出单，将状态更新为已拒绝
+     *
+     * 传入参数：
+     * - id (int): 支出单ID
+     * - reason (string, optional): 拒绝原因
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功，1表示失败
+     * - data (object): 拒绝后的支出单信息
+     * - msg (string): 操作结果消息
      */
     public function reject(Request $request, $id)
     {
@@ -420,7 +540,14 @@ class ExpenseController extends Controller
     }
 
     /**
-     * 生成支出单号
+     * 生成支出单号 generateExpenseNo
+     *
+     * 功能描述：生成唯一的支出单编号，格式为CK+日期+3位随机数
+     *
+     * 传入参数：无
+     *
+     * 输出参数：
+     * - string: 生成的支出单号，例如：CK20231201001
      */
     private function generateExpenseNo()
     {

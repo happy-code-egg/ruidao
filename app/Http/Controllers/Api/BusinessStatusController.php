@@ -34,32 +34,36 @@ class BusinessStatusController extends Controller
     public function index(Request $request)
     {
         try {
+            // 创建 BusinessStatus 模型查询构建器
             $query = BusinessStatus::query();
 
-            // 状态名称搜索
+            // 状态名称搜索 - 当statusName参数存在且不为空时进行模糊匹配
             if ($request->has('statusName') && !empty($request->statusName)) {
                 $query->where('status_name', 'like', '%' . $request->statusName . '%');
             }
 
-            // 状态筛选
+            // 状态筛选 - 当isValid参数存在且不为空时进行有效性匹配
             if ($request->has('isValid') && $request->isValid !== '' && $request->isValid !== null) {
                 $query->where('is_valid', $request->isValid);
             }
 
-            // 分页
+            // 分页处理
+            // 确保页码至少为1，防止负数或0
             $page = max(1, (int)$request->get('page', 1));
+            // 确保每页记录数在1-100范围内
             $limit = max(1, min(100, (int)$request->get('limit', 15)));
 
-            // 获取总数
+            // 获取符合条件的总记录数
             $total = $query->count();
 
-            // 获取数据
+            // 获取当前页的数据列表，按 sort 和 id 升序排列
             $data = $query->orderBy('sort')
-                         ->orderBy('id')
-                         ->offset(($page - 1) * $limit)
-                         ->limit($limit)
-                         ->get();
+                ->orderBy('id')
+                ->offset(($page - 1) * $limit)
+                ->limit($limit)
+                ->get();
 
+            // 返回成功响应，包含列表数据和分页信息
             return json_success('获取列表成功', [
                 'list' => $data->toArray(),
                 'total' => $total,
@@ -69,6 +73,7 @@ class BusinessStatusController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            // 记录错误日志并返回失败响应
             \Log::error('获取商机状态列表失败: ' . $e->getMessage());
             return json_fail('获取列表失败');
         }

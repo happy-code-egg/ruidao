@@ -299,73 +299,77 @@ class CaseProcessController extends Controller
     public function show($id)
     {
         try {
+            // 查询指定ID的处理事项，并预加载关联数据
             $processItem = CaseProcess::with([
-                'case:id,case_name,case_code',
-                'assignedUser:id,real_name',
-                'assigneeUser:id,real_name',
-                'reviewerUser:id,real_name',
-                'creator:id,real_name',
-                'updater:id,real_name'
+                'case:id,case_name,case_code',              // 关联案例信息
+                'assignedUser:id,real_name',                // 负责人信息
+                'assigneeUser:id,real_name',                // 配案人信息
+                'reviewerUser:id,real_name',                // 审核人信息
+                'creator:id,real_name',                     // 创建人信息
+                'updater:id,real_name'                      // 更新人信息
             ])->find($id);
 
+            // 如果处理事项不存在，返回错误信息
             if (!$processItem) {
                 return json_fail('处理事项不存在');
             }
 
+            // 构建返回结果数据，包含基础信息、关联信息、状态信息等
             $result = [
                 'id' => $processItem->id,
                 'case_id' => $processItem->case_id,
-                'case_name' => $processItem->case->case_name ?? '',
-                'case_code' => $processItem->case->case_code ?? '',
-                'process_code' => $processItem->process_code,
-                'process_name' => $processItem->process_name,
-                'process_type' => $processItem->process_type,
-                'process_status' => $processItem->process_status,
-                'process_status_text' => $processItem->status_text,
-                'priority_level' => $processItem->priority_level,
-                'priority_text' => $processItem->priority_text,
-                'assigned_to' => $processItem->assigned_to,
-                'assigned_user_name' => $processItem->assignedUser->real_name ?? '',
-                'assignee' => $processItem->assignee,
-                'assignee_user_name' => $processItem->assigneeUser->real_name ?? '',
-                'reviewer' => $processItem->reviewer,
-                'reviewer_user_name' => $processItem->reviewerUser->real_name ?? '',
-                'is_assign' => $processItem->is_assign,
-                'due_date' => $processItem->due_date,
-                'internal_deadline' => $processItem->internal_deadline,
-                'official_deadline' => $processItem->official_deadline,
-                'customer_deadline' => $processItem->customer_deadline,
-                'expected_complete_date' => $processItem->expected_complete_date,
-                'completion_date' => $processItem->completion_date,
-                'issue_date' => $processItem->issue_date,
-                'case_stage' => $processItem->case_stage,
-                'contract_code' => $processItem->contract_code,
-                'estimated_hours' => $processItem->estimated_hours,
-                'actual_hours' => $processItem->actual_hours,
-                'process_coefficient' => $processItem->process_coefficient,
-                'process_description' => $processItem->process_description,
-                'process_result' => $processItem->process_result,
-                'process_remark' => $processItem->process_remark,
-                'service_fees' => $processItem->service_fees,
-                'official_fees' => $processItem->official_fees,
-                'attachments' => $processItem->attachments,
-                'parent_process_id' => $processItem->parent_process_id,
-                'is_overdue' => $processItem->isOverdue(),
-                'created_by' => $processItem->creator->real_name ?? '',
-                'updated_by' => $processItem->updater->real_name ?? '',
-                'created_at' => $processItem->created_at ? $processItem->created_at->format('Y-m-d H:i:s') : '',
-                'updated_at' => $processItem->updated_at ? $processItem->updated_at->format('Y-m-d H:i:s') : '',
-                'completed_time' => $processItem->completed_time ? $processItem->completed_time->format('Y-m-d H:i:s') : '',
+                'case_name' => $processItem->case->case_name ?? '',             // 案例名称
+                'case_code' => $processItem->case->case_code ?? '',             // 案例编码
+                'process_code' => $processItem->process_code,                   // 处理事项编码
+                'process_name' => $processItem->process_name,                   // 处理事项名称
+                'process_type' => $processItem->process_type,                   // 处理事项类型
+                'process_status' => $processItem->process_status,               // 处理状态
+                'process_status_text' => $processItem->status_text,             // 处理状态文本
+                'priority_level' => $processItem->priority_level,               // 优先级
+                'priority_text' => $processItem->priority_text,                 // 优先级文本
+                'assigned_to' => $processItem->assigned_to,                     // 负责人ID
+                'assigned_user_name' => $processItem->assignedUser->real_name ?? '',  // 负责人姓名
+                'assignee' => $processItem->assignee,                           // 配案人ID
+                'assignee_user_name' => $processItem->assigneeUser->real_name ?? '',  // 配案人姓名
+                'reviewer' => $processItem->reviewer,                           // 审核人ID
+                'reviewer_user_name' => $processItem->reviewerUser->real_name ?? '',  // 审核人姓名
+                'is_assign' => $processItem->is_assign,                         // 是否分配
+                'due_date' => $processItem->due_date,                           // 到期日期
+                'internal_deadline' => $processItem->internal_deadline,         // 内部截止日期
+                'official_deadline' => $processItem->official_deadline,         // 官方截止日期
+                'customer_deadline' => $processItem->customer_deadline,         // 客户截止日期
+                'expected_complete_date' => $processItem->expected_complete_date, // 预计完成日期
+                'completion_date' => $processItem->completion_date,             // 完成日期
+                'issue_date' => $processItem->issue_date,                       // 接收日期
+                'case_stage' => $processItem->case_stage,                       // 案例阶段
+                'contract_code' => $processItem->contract_code,                 // 合同编码
+                'estimated_hours' => $processItem->estimated_hours,             // 预估工时
+                'actual_hours' => $processItem->actual_hours,                   // 实际工时
+                'process_coefficient' => $processItem->process_coefficient,     // 处理系数
+                'process_description' => $processItem->process_description,     // 处理描述
+                'process_result' => $processItem->process_result,               // 处理结果
+                'process_remark' => $processItem->process_remark,               // 备注
+                'service_fees' => $processItem->service_fees,                   // 服务费列表
+                'official_fees' => $processItem->official_fees,                 // 官费列表
+                'attachments' => $processItem->attachments,                     // 附件列表
+                'parent_process_id' => $processItem->parent_process_id,         // 父处理事项ID
+                'is_overdue' => $processItem->isOverdue(),                      // 是否逾期
+                'created_by' => $processItem->creator->real_name ?? '',         // 创建人姓名
+                'updated_by' => $processItem->updater->real_name ?? '',         // 更新人姓名
+                'created_at' => $processItem->created_at ? $processItem->created_at->format('Y-m-d H:i:s') : '',  // 创建时间
+                'updated_at' => $processItem->updated_at ? $processItem->updated_at->format('Y-m-d H:i:s') : '',  // 更新时间
+                'completed_time' => $processItem->completed_time ? $processItem->completed_time->format('Y-m-d H:i:s') : '', // 完成时间
             ];
 
+            // 返回成功响应，包含处理事项详情数据
             return json_success('获取详情成功', $result);
 
         } catch (\Exception $e) {
+            // 记录异常日志并返回失败响应
             log_exception($e, '获取处理事项详情失败');
             return json_fail('获取详情失败');
         }
     }
-
     /**
     更新处理事项
     功能说明：
@@ -652,6 +656,7 @@ class CaseProcessController extends Controller
     public function getUpdateList(Request $request)
     {
         try {
+            // 获取请求参数
             $page = $request->get('page', 1);
             $limit = $request->get('limit', 10);
             $ourRefNumber = $request->get('ourRefNumber');
@@ -661,24 +666,28 @@ class CaseProcessController extends Controller
             $updateStatus = $request->get('updateStatus');
 
             // 构建查询 - 获取有处理事项需要更新的项目
+            // 关联 contract_cases、customers、case_processes 和 users 表
             $query = \DB::table('contract_cases as cc')
                 ->leftJoin('customers as c', 'cc.customer_id', '=', 'c.id')
                 ->leftJoin('case_processes as cp', 'cc.id', '=', 'cp.case_id')
                 ->leftJoin('users as creator', 'cp.created_by', '=', 'creator.id')
                 ->leftJoin('users as processor', 'cp.assigned_to', '=', 'processor.id')
+                // 选择需要的字段，包括统计信息和用户信息
                 ->select([
                     'cc.id',
                     'cc.our_ref_number',
                     'cc.application_no',
                     'cc.case_name',
                     'c.customer_name as client_name',
-                    \DB::raw('COUNT(cp.id) as process_count'),
-                    \DB::raw('SUM(CASE WHEN cp.process_status = 2 THEN 1 ELSE 0 END) as processing_count'),
-                    \DB::raw('MAX(cp.updated_at) as update_time'),
-                    \DB::raw('GROUP_CONCAT(DISTINCT creator.name) as creator_name'),
-                    \DB::raw('GROUP_CONCAT(DISTINCT processor.name) as processor_name')
+                    \DB::raw('COUNT(cp.id) as process_count'),  // 处理事项总数
+                    \DB::raw('SUM(CASE WHEN cp.process_status = 2 THEN 1 ELSE 0 END) as processing_count'),  // 处理中事项数
+                    \DB::raw('MAX(cp.updated_at) as update_time'),  // 最新更新时间
+                    \DB::raw('GROUP_CONCAT(DISTINCT creator.name) as creator_name'),  // 创建人姓名（多个用逗号分隔）
+                    \DB::raw('GROUP_CONCAT(DISTINCT processor.name) as processor_name')  // 处理人姓名（多个用逗号分隔）
                 ])
+                // 只查询存在处理事项的项目
                 ->whereNotNull('cp.id')
+                // 按项目信息分组
                 ->groupBy('cc.id', 'cc.our_ref_number', 'cc.application_no', 'cc.case_name', 'c.customer_name');
 
             // 添加搜索条件
@@ -698,21 +707,22 @@ class CaseProcessController extends Controller
             // 获取总数
             $total = $query->get()->count();
 
-            // 分页查询
+            // 分页查询，按最新更新时间倒序排列
             $list = $query->orderBy('update_time', 'desc')
                 ->offset(($page - 1) * $limit)
                 ->limit($limit)
                 ->get()
+                // 格式化返回数据
                 ->map(function ($item, $index) use ($page, $limit) {
                     return [
                         'id' => $item->id,
-                        'serialNo' => ($page - 1) * $limit + $index + 1,
+                        'serialNo' => ($page - 1) * $limit + $index + 1,  // 序号
                         'ourRefNumber' => $item->our_ref_number,
                         'applicationNo' => $item->application_no,
                         'clientName' => $item->client_name,
                         'caseName' => $item->case_name,
                         'updateType' => '更新处理事项',
-                        'updateStatus' => $item->processing_count > 0 ? 'processing' : 'pending',
+                        'updateStatus' => $item->processing_count > 0 ? 'processing' : 'pending',  // 更新状态
                         'createTime' => $item->update_time,
                         'creator' => $item->creator_name,
                         'updateTime' => $item->update_time,
@@ -720,6 +730,7 @@ class CaseProcessController extends Controller
                     ];
                 });
 
+            // 返回成功响应
             return response()->json([
                 'success' => true,
                 'message' => '查询成功',
@@ -732,6 +743,7 @@ class CaseProcessController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            // 记录错误日志并返回失败响应
             \Log::error('获取项目更新列表失败: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
@@ -914,12 +926,14 @@ class CaseProcessController extends Controller
     public function updateCaseProcesses($caseId, Request $request)
     {
         try {
+            // 开启数据库事务，确保数据一致性
             \DB::beginTransaction();
 
+            // 获取请求参数
             $processForm = $request->get('processForm', []);
             $selectedProcessItems = $request->get('selectedProcessItems', []);
 
-            // 如果有选中的处理事项，更新它们
+            // 如果有选中的处理事项，只更新这些指定的处理事项
             if (!empty($selectedProcessItems)) {
                 foreach ($selectedProcessItems as $processId) {
                     \DB::table('case_processes')
@@ -935,8 +949,8 @@ class CaseProcessController extends Controller
                             'process_coefficient' => $processForm['processQuantity'] ?? null,
                             'internal_deadline' => $processForm['contentDeadline'] ?? null,
                             'process_remark' => $processForm['updateReason'] ?? null,
-                            'updated_at' => now(),
-                            'updated_by' => auth()->id() ?? 1
+                            'updated_at' => now(),  // 自动更新时间戳
+                            'updated_by' => auth()->id() ?? 1  // 记录更新人
                         ]);
                 }
             } else {
@@ -953,21 +967,28 @@ class CaseProcessController extends Controller
                         'process_coefficient' => $processForm['processQuantity'] ?? null,
                         'internal_deadline' => $processForm['contentDeadline'] ?? null,
                         'process_remark' => $processForm['updateReason'] ?? null,
-                        'updated_at' => now(),
-                        'updated_by' => auth()->id() ?? 1
+                        'updated_at' => now(),  // 自动更新时间戳
+                        'updated_by' => auth()->id() ?? 1  // 记录更新人
                     ]);
             }
 
+            // 提交事务
             \DB::commit();
 
+            // 返回成功响应
             return response()->json([
                 'success' => true,
                 'message' => '更新成功'
             ]);
 
         } catch (\Exception $e) {
+            // 出现异常时回滚事务
             \DB::rollBack();
+
+            // 记录错误日志
             \Log::error('更新处理事项失败: ' . $e->getMessage());
+
+            // 返回失败响应
             return response()->json([
                 'success' => false,
                 'message' => '更新失败: ' . $e->getMessage()

@@ -167,25 +167,40 @@ abstract class BaseDataConfigController extends Controller
     public function store(Request $request)
     {
         try {
+            // 使用自定义验证规则和错误消息对请求数据进行验证
             $validator = Validator::make($request->all(), $this->getValidationRules(), $this->getValidationMessages());
 
+            // 如果验证失败，返回第一个错误消息
             if ($validator->fails()) {
                 return json_fail($validator->errors()->first());
             }
 
+            // 获取当前控制器对应的数据模型类名
             $modelClass = $this->getModelClass();
+
+            // 获取所有请求数据
             $data = $request->all();
+
+            // 自动填充创建人ID，如果用户未登录则默认为1
             $data['created_by'] = Auth::user()->id ?? 1;
+
+            // 自动填充更新人ID，与创建人相同
             $data['updated_by'] = $data['created_by'];
+
+            // 使用模型创建新记录
             $item = $modelClass::create($data);
 
-            // 记录操作日志
+            // 记录操作日志（当前被注释，如需启用可取消注释）
             // $this->logOperation('create', $item->getTable(), $item->id, $request->all());
 
+            // 返回创建成功的响应，包含新创建的记录数据
             return json_success('创建成功', $item);
 
         } catch (\Exception $e) {
+            // 记录异常日志
             log_exception($e, '创建数据配置失败');
+
+            // 返回创建失败的响应
             return json_fail('创建失败');
         }
     }
@@ -214,33 +229,50 @@ abstract class BaseDataConfigController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            // 获取当前控制器对应的数据模型类名
             $modelClass = $this->getModelClass();
+
+            // 根据ID查找记录，如果不存在则返回错误
             $item = $modelClass::find($id);
 
             if (!$item) {
                 return json_fail('记录不存在');
             }
 
+            // 使用更新场景的验证规则和错误消息对请求数据进行验证
             $validator = Validator::make($request->all(), $this->getValidationRules(true), $this->getValidationMessages());
 
+            // 如果验证失败，返回第一个错误消息
             if ($validator->fails()) {
                 return json_fail($validator->errors()->first());
             }
 
+            // 保存更新前的数据用于日志记录
             $oldData = $item->toArray();
-            // 特定字段不更新
+
+            // 获取所有请求数据
             $data = $request->all();
+
+            // 移除created_by字段，防止创建人被修改
             unset($data['created_by']);
+
+            // 自动填充更新人ID，如果用户未登录则默认为1
             $data['updated_by'] = Auth::user()->id ?? 1;
+
+            // 更新记录
             $item->update($data);
 
-            // 记录操作日志
+            // 记录操作日志（当前被注释，如需启用可取消注释）
             // $this->logOperation('update', $item->getTable(), $item->id, $request->all(), $oldData);
 
+            // 返回更新成功的响应，包含更新后的记录数据
             return json_success('更新成功', $item);
 
         } catch (\Exception $e) {
+            // 记录异常日志
             log_exception($e, '更新数据配置失败');
+
+            // 返回更新失败的响应
             return json_fail('更新失败');
         }
     }

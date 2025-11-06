@@ -121,17 +121,18 @@ class AgencyController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'sort' => 'required|integer|min:1',
-            'agencyNameCn' => 'required|string|max:200',
-            'agencyNameEn' => 'required|string|max:200',
-            'country' => 'required|string|max:100',
-            'agencyCode' => 'nullable|string|max:50|unique:agencies,agency_code',
-            'socialCreditCode' => 'nullable|string|max:100',
-            'createTime' => 'nullable|date',
-            'agentType' => 'nullable|string|max:100',
-            'isValid' => 'nullable|boolean',
-            'isSupplier' => 'nullable|boolean'
+            'sort' => 'required|integer|min:1', // 排序值：必填、整数、最小值1
+            'agencyNameCn' => 'required|string|max:200', // 中文名称：必填、字符串、最大长度200
+            'agencyNameEn' => 'required|string|max:200', // 英文名称：必填、字符串、最大长度200
+            'country' => 'required|string|max:100', // 所属国家：必填、字符串、最大长度100
+            'agencyCode' => 'nullable|string|max:50|unique:agencies,agency_code', // 机构代码：可选、字符串、最大长度50、在agencies表的agency_code字段中唯一
+            'socialCreditCode' => 'nullable|string|max:100', // 社会信用代码：可选、字符串、最大长度100
+            'createTime' => 'nullable|date', // 创建时间：可选、日期格式
+            'agentType' => 'nullable|string|max:100', // 代理类型：可选、字符串、最大长度100
+            'isValid' => 'nullable|boolean', // 是否有效：可选、布尔值
+            'isSupplier' => 'nullable|boolean' // 是否供应商：可选、布尔值
         ], [
+            // 自定义验证错误提示信息
             'sort.required' => '排序值不能为空',
             'sort.min' => '排序值必须大于0',
             'agencyNameCn.required' => '代理机构中文名称不能为空',

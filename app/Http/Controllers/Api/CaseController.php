@@ -52,9 +52,11 @@ class CaseController extends Controller
     public function index(Request $request)
     {
         try {
+            // 构建查询，关联客户表和产品表
             $query = DB::table('cases as c')
                 ->join('customers as cu', 'c.customer_id', '=', 'cu.id')
                 ->leftJoin('products as p', 'c.product_id', '=', 'p.id')
+                // 选择需要返回的字段
                 ->select([
                     'c.id',
                     'c.case_code',
@@ -91,66 +93,83 @@ class CaseController extends Controller
                     'c.updated_by as updateUser',
                     'c.updated_at as updateTime'
                 ])
+                // 过滤已软删除的案例
                 ->whereNull('c.deleted_at');
 
-            // 搜索条件
+            // 搜索条件 - 客户ID精确匹配
             if ($request->filled('customer_id')) {
                 $query->where('c.customer_id', $request->customer_id);
             }
 
+            // 搜索条件 - 合同ID精确匹配
             if ($request->filled('contract_id')) {
                 $query->where('c.contract_id', $request->contract_id);
             }
 
+            // 搜索条件 - 客户名称模糊匹配
             if ($request->filled('customer_name')) {
                 $query->where('cu.customer_name', 'like', '%' . $request->customer_name . '%');
             }
 
+            // 搜索条件 - 案例名称模糊匹配
             if ($request->filled('case_name')) {
                 $query->where('c.case_name', 'like', '%' . $request->case_name . '%');
             }
 
+            // 搜索条件 - 案例编码模糊匹配
             if ($request->filled('case_code')) {
                 $query->where('c.case_code', 'like', '%' . $request->case_code . '%');
             }
 
+            // 搜索条件 - 案例类型精确匹配
             if ($request->filled('case_type')) {
                 $query->where('c.case_type', $request->case_type);
             }
 
+            // 搜索条件 - 案例状态精确匹配
             if ($request->filled('case_status')) {
                 $query->where('c.case_status', $request->case_status);
             }
 
+            // 搜索条件 - 申请号模糊匹配
             if ($request->filled('application_no')) {
                 $query->where('c.application_no', 'like', '%' . $request->application_no . '%');
             }
 
+            // 搜索条件 - 注册号模糊匹配
             if ($request->filled('registration_no')) {
                 $query->where('c.registration_no', 'like', '%' . $request->registration_no . '%');
             }
 
+            // 搜索条件 - 国家代码精确匹配
             if ($request->filled('country_code')) {
                 $query->where('c.country_code', $request->country_code);
             }
 
+            // 搜索条件 - 申请开始日期范围匹配
             if ($request->filled('application_date_start')) {
                 $query->where('c.application_date', '>=', $request->application_date_start);
             }
 
+            // 搜索条件 - 申请结束日期范围匹配
             if ($request->filled('application_date_end')) {
                 $query->where('c.application_date', '<=', $request->application_date_end);
             }
 
+            // 分页参数处理
             $perPage = $request->input('page_size', 10);
             $page = $request->input('page', 1);
 
+            // 获取总记录数
             $total = $query->count();
+
+            // 获取当前页数据，按创建时间倒序排列
             $cases = $query->orderBy('c.created_at', 'desc')
                 ->offset(($page - 1) * $perPage)
                 ->limit($perPage)
                 ->get();
 
+            // 返回成功响应，包含列表数据和分页信息
             return response()->json([
                 'success' => true,
                 'message' => '获取成功',
@@ -164,6 +183,7 @@ class CaseController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            // 异常处理，返回错误信息
             return response()->json([
                 'success' => false,
                 'message' => '获取失败：' . $e->getMessage()

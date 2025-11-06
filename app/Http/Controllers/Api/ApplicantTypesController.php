@@ -53,10 +53,19 @@ class ApplicantTypesController extends BaseDataConfigController
         return $rules;
     }
 
+    /**
+     * 获取验证消息数组
+     *
+     * 该函数用于获取验证规则对应的错误消息，通过合并父类的验证消息和当前类的特定验证消息来构建完整的验证消息数组
+     *
+     * @return array 返回验证规则对应的消息数组，键为验证规则，值为对应的错误消息
+     */
     protected function getValidationMessages()
     {
+        // 合并父类验证消息和当前类特定验证消息
         return array_merge(parent::getValidationMessages(), [
             // 可以在这里添加特定的验证消息
         ]);
     }
+
 }

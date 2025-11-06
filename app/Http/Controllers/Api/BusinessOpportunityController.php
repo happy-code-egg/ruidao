@@ -91,118 +91,154 @@ class BusinessOpportunityController extends Controller
     public function index(Request $request)
     {
         try {
+            // 创建查询构建器，预加载关联关系以提高性能
             $query = BusinessOpportunity::with([
-                'customer',
-                'businessPerson',
-                'creator',
-                'updater'
+                'customer',           // 客户信息
+                'businessPerson',     // 业务员信息
+                'creator',            // 创建人信息
+                'updater'             // 更新人信息
             ]);
 
-            // 搜索条件
+            // 条件筛选 - 客户ID精确匹配
             if ($request->filled('customer_id')) {
                 $query->where('customer_id', $request->customer_id);
             }
 
+            // 条件筛选 - 商机名称模糊匹配
             if ($request->filled('name')) {
                 $query->where('name', 'like', '%' . $request->name . '%');
             }
 
+            // 条件筛选 - 客户名称模糊匹配（通过关联表查询）
             if ($request->filled('customer_name')) {
                 $query->whereHas('customer', function ($q) use ($request) {
                     $q->where('customer_name', 'like', '%' . $request->customer_name . '%');
                 });
             }
 
+            // 条件筛选 - 商机编码模糊匹配
             if ($request->filled('business_code')) {
                 $query->where('business_code', 'like', '%' . $request->business_code . '%');
             }
 
+            // 条件筛选 - 状态精确匹配
             if ($request->filled('status')) {
                 $query->where('status', $request->status);
             }
 
+            // 条件筛选 - 商机类型精确匹配
             if ($request->filled('business_type')) {
                 $query->where('business_type', $request->business_type);
             }
 
+            // 条件筛选 - 案件类型精确匹配
             if ($request->filled('case_type')) {
                 $query->where('case_type', $request->case_type);
             }
 
+            // 条件筛选 - 业务员ID精确匹配
             if ($request->filled('business_person_id')) {
                 $query->where('business_person_id', $request->business_person_id);
             }
 
+            // 条件筛选 - 联系人模糊匹配
             if ($request->filled('contact_person')) {
                 $query->where('contact_person', 'like', '%' . $request->contact_person . '%');
             }
 
+            // 条件筛选 - 联系电话模糊匹配
             if ($request->filled('contact_phone')) {
                 $query->where('contact_phone', 'like', '%' . $request->contact_phone . '%');
             }
 
+            // 条件筛选 - 是否签约状态匹配
             if ($request->filled('is_contract')) {
                 $query->where('is_contract', $request->is_contract);
             }
 
-            // 预计签约时间筛选
+            // 时间范围筛选 - 预计签约时间区间匹配
             if ($request->filled('estimated_sign_start_date') && $request->filled('estimated_sign_end_date')) {
                 $query->whereBetween('estimated_sign_time', [$request->estimated_sign_start_date, $request->estimated_sign_end_date]);
             }
 
-            // 跟进时间筛选
+            // 时间范围筛选 - 下次跟进时间区间匹配
             if ($request->filled('next_time_start') && $request->filled('next_time_end')) {
                 $query->whereBetween('next_time', [$request->next_time_start, $request->next_time_end]);
             }
 
-            // 分页
+            // 分页处理，默认每页10条记录
             $pageSize = $request->get('page_size', 10);
             $opportunities = $query->orderBy('id', 'desc')->paginate($pageSize);
 
-            // 格式化数据
+            // 数据格式化转换，为每个商机记录添加多种命名格式的字段以兼容前端需求
             $opportunities->getCollection()->transform(function ($opportunity) {
                 return [
+                    // 基础字段信息
                     'id' => $opportunity->id,
                     'customer_id' => $opportunity->customer_id,
+
+                    // 客户名称（多种命名格式）
                     'customer_name' => $opportunity->customer->customer_name ?? '',
                     'customerName' => $opportunity->customer->customer_name ?? '',
+
+                    // 商机编码（多种命名格式）
                     'business_code' => $opportunity->business_code,
                     'businessCode' => $opportunity->business_code,
+
+                    // 商机名称（多种命名格式）
                     'name' => $opportunity->name,
                     'businessName' => $opportunity->name,
+
+                    // 联系人信息（多种命名格式）
                     'contact_person' => $opportunity->contact_person,
                     'contactPerson' => $opportunity->contact_person,
                     'contact_phone' => $opportunity->contact_phone,
                     'contactPhone' => $opportunity->contact_phone,
+
+                    // 业务员信息（多种命名格式）
                     'business_person' => $opportunity->businessPerson->name ?? '',
                     'businessPerson' => $opportunity->businessPerson->name ?? '',
                     'business_person_id' => $opportunity->business_person_id,
                     'businessPersonId' => $opportunity->business_person_id,
                     'business_staff' => $opportunity->businessPerson->name ?? '',
                     'businessStaff' => $opportunity->businessPerson->name ?? '',
+
+                    // 时间信息（多种命名格式）
                     'next_time' => $opportunity->next_time ? $opportunity->next_time->format('Y-m-d H:i:s') : '',
                     'nextTime' => $opportunity->next_time ? $opportunity->next_time->format('Y-m-d H:i:s') : '',
                     'second_time' => $opportunity->second_time ? $opportunity->second_time->format('Y-m-d') : '',
                     'secondTime' => $opportunity->second_time ? $opportunity->second_time->format('Y-m-d') : '',
+
+                    // 内容和类型信息
                     'content' => $opportunity->content,
                     'case_type' => $opportunity->case_type,
                     'caseType' => $opportunity->case_type,
                     'business_type' => $opportunity->business_type,
                     'businessType' => $opportunity->business_type,
+
+                    // 金额和时间信息（多种命名格式）
                     'estimated_amount' => $opportunity->estimated_amount,
                     'estimatedAmount' => $opportunity->estimated_amount,
                     'estimated_sign_time' => $opportunity->estimated_sign_time ? $opportunity->estimated_sign_time->format('Y-m-d') : '',
                     'estimatedSignTime' => $opportunity->estimated_sign_time ? $opportunity->estimated_sign_time->format('Y-m-d') : '',
+
+                    // 状态和合同信息
                     'status' => $opportunity->status,
                     'is_contract' => $opportunity->is_contract,
                     'isContract' => $opportunity->is_contract,
+
+                    // 背景和备注信息
                     'background' => $opportunity->background,
                     'remark' => $opportunity->remark,
+
+                    // 创建人信息（多种命名格式）
                     'create_user' => $opportunity->creator->name ?? '',
                     'createUser' => $opportunity->creator->name ?? '',
                     'created_at' => $opportunity->created_at ? $opportunity->created_at->format('Y-m-d H:i:s') : '',
                     'create_time' => $opportunity->created_at ? $opportunity->created_at->format('Y-m-d H:i:s') : '',
                     'createTime' => $opportunity->created_at ? $opportunity->created_at->format('Y-m-d H:i:s') : '',
+
+                    // 更新人信息（多种命名格式）
                     'update_user' => $opportunity->updater->name ?? '',
                     'updateUser' => $opportunity->updater->name ?? '',
                     'updated_at' => $opportunity->updated_at ? $opportunity->updated_at->format('Y-m-d H:i:s') : '',
@@ -211,19 +247,21 @@ class BusinessOpportunityController extends Controller
                 ];
             });
 
+            // 返回成功响应，包含列表数据和分页信息
             return response()->json([
                 'success' => true,
                 'message' => '获取成功',
                 'data' => [
-                    'list' => $opportunities->items(),
-                    'total' => $opportunities->total(),
-                    'per_page' => $opportunities->perPage(),
-                    'current_page' => $opportunities->currentPage(),
-                    'last_page' => $opportunities->lastPage(),
+                    'list' => $opportunities->items(),        // 当前页数据列表
+                    'total' => $opportunities->total(),       // 总记录数
+                    'per_page' => $opportunities->perPage(),  // 每页记录数
+                    'current_page' => $opportunities->currentPage(), // 当前页码
+                    'last_page' => $opportunities->lastPage(),       // 最后页码
                 ]
             ]);
 
         } catch (\Exception $e) {
+            // 异常处理，返回错误信息
             return response()->json([
                 'success' => false,
                 'message' => '获取失败：' . $e->getMessage()

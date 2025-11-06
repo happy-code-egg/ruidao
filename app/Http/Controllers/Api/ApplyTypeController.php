@@ -19,16 +19,23 @@ class ApplyTypeController extends BaseDataConfigController
  */
 class ApplyTypeController extends BaseDataConfigController
 {
+
     /**
      * 获取模型类名
+     *
+     * @return string 返回ApplyType模型类的完全限定类名
      */
     protected function getModelClass()
     {
         return ApplyType::class;
     }
 
+
     /**
      * 获取验证规则
+     *
+     * @param bool $isUpdate 是否为更新操作，默认为false
+     * @return array 验证规则数组
      */
     protected function getValidationRules($isUpdate = false)
     {

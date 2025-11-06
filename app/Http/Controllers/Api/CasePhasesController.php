@@ -60,9 +60,17 @@ class CasePhasesController extends BaseDataConfigController
 
         return $rules;
     }
-
+    /**
+     * 获取验证消息数组
+     *
+     * 此方法用于获取验证规则对应的错误消息，通过合并父类的验证消息和当前类的特定验证消息来构建完整的验证消息数组。
+     * 子类可以在此方法中添加特定于当前类的验证消息。
+     *
+     * @return array 返回验证消息数组，键为验证规则，值为对应的错误消息
+     */
     protected function getValidationMessages()
     {
+        // 合并父类验证消息和当前类特定验证消息
         return array_merge(parent::getValidationMessages(), [
             // 可以在这里添加特定的验证消息
         ]);

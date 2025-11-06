@@ -81,42 +81,50 @@ class BusinessServiceTypesController extends BaseDataConfigController
     public function index(Request $request)
     {
         try {
+            // 创建 BusinessServiceTypes 模型查询构建器
             $query = BusinessServiceTypes::query();
 
-            // 按名称模糊查询
+            // 按名称模糊查询 - 当name参数存在且不为空时进行模糊匹配
             if ($request->has('name') && $request->name !== '' && $request->name !== null) {
                 $query->where('name', 'like', '%' . $request->name . '%');
             }
 
-            // 按业务类别精确筛选
+            // 按业务类别精确筛选 - 当category参数存在且不为空时进行精确匹配
             if ($request->has('category') && $request->category !== '' && $request->category !== null) {
                 $query->where('category', $request->category);
             }
 
-            // 状态筛选
+            // 状态筛选 - 当status参数存在且不为空时进行状态匹配
             if ($request->has('status') && $request->status !== '' && $request->status !== null) {
                 $query->where('status', $request->status);
             }
 
-            // 分页
+            // 分页处理
+            // 确保页码至少为1，防止负数或0
             $page = max(1, (int) $request->get('page', 1));
+            // 确保每页记录数在1-100范围内
             $limit = max(1, min(100, (int) $request->get('limit', 15)));
 
+            // 获取符合条件的总记录数
             $total = $query->count();
-            $list = $query->orderBy('sort_order')
-                          ->orderBy('id')
-                          ->offset(($page - 1) * $limit)
-                          ->limit($limit)
-                          ->get();
 
+            // 获取当前页的数据列表，按 sort_order 和 id 升序排列
+            $list = $query->orderBy('sort_order')
+                ->orderBy('id')
+                ->offset(($page - 1) * $limit)
+                ->limit($limit)
+                ->get();
+
+            // 返回成功响应，包含列表数据和分页信息
             return json_success('获取列表成功', [
                 'list' => $list,
                 'total' => $total,
                 'page' => $page,
                 'limit' => $limit,
-                'pages' => ceil($total / $limit),
+                'pages' => ceil($total / $limit), // 计算总页数
             ]);
         } catch (\Exception $e) {
+            // 记录异常日志并返回失败响应
             log_exception($e, '获取业务服务类型列表失败');
             return json_fail('获取列表失败');
         }
