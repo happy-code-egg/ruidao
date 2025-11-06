@@ -6,22 +6,26 @@ use Illuminate\Database\Eloquent\Model;
 
 class BusinessStatus extends Model
 {
+    // 指定对应的数据库表名
     protected $table = 'business_statuses';
 
+    // 允许批量赋值的字段列表
     protected $fillable = [
-        'status_name',
-        'is_valid',
-        'sort',
-        'updated_by'
+        'status_name',    // 状态名称
+        'is_valid',       // 是否有效(布尔值)
+        'sort',           // 排序字段
+        'updated_by'      // 更新者
     ];
 
+    // 字段类型转换定义
     protected $casts = [
-        'is_valid' => 'boolean',
-        'sort' => 'integer'
+        'is_valid' => 'boolean',  // 是否有效 - 布尔类型
+        'sort' => 'integer'       // 排序 - 整数类型
     ];
 
     /**
      * 获取状态文本
+     * 根据 is_valid 字段值返回对应的中文状态描述
      */
     public function getStatusTextAttribute()
     {
@@ -30,6 +34,7 @@ class BusinessStatus extends Model
 
     /**
      * 作用域：启用状态
+     * 查询作用域 - 只获取有效状态(is_valid=true)的记录
      */
     public function scopeEnabled($query)
     {
@@ -38,6 +43,7 @@ class BusinessStatus extends Model
 
     /**
      * 作用域：按排序
+     * 查询作用域 - 按 sort 字段和 id 字段进行升序排序
      */
     public function scopeOrdered($query)
     {
@@ -46,6 +52,7 @@ class BusinessStatus extends Model
 
     /**
      * 处理API响应格式
+     * 自定义模型数组序列化格式，指定返回给API的字段及其格式
      */
     public function toArray()
     {
@@ -55,8 +62,8 @@ class BusinessStatus extends Model
             'sort' => $this->sort,
             'statusName' => $this->status_name,
             'isValid' => $this->is_valid,
-            'updatedBy' => $this->updated_by ?: '系统记录',
-            'updatedAt' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : '系统记录'
+            'updatedBy' => $this->updated_by ?: '系统记录',  // 如果更新者为空则显示"系统记录"
+            'updatedAt' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : '系统记录'  // 格式化更新时间
         ];
     }
 }

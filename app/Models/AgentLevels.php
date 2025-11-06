@@ -6,26 +6,29 @@ use Illuminate\Database\Eloquent\Model;
 
 class AgentLevels extends Model
 {
+    // 指定对应的数据库表名
     protected $table = 'agent_levels';
-    
+
+    // 允许批量赋值的字段列表
     protected $fillable = [
-        'name',
-        'code',
-        'description',
-        'status',
-        'sort_order',
-        'level_name',
-        'level_code',
-        'commission_rate',
-        'created_by',
-        'updated_by'
+        'name',           // 等级名称
+        'code',           // 等级编码
+        'description',    // 描述信息
+        'status',         // 状态(1:启用, 0:禁用)
+        'sort_order',     // 排序顺序
+        'level_name',     // 级别名称
+        'level_code',     // 级别编码
+        'commission_rate', // 佣金比率
+        'created_by',     // 创建者ID
+        'updated_by'      // 更新者ID
     ];
 
+    // 字段类型转换定义
     protected $casts = [
-        'status' => 'integer',
-        'sort_order' => 'integer',
-        'created_by' => 'integer',
-        'updated_by' => 'integer'
+        'status' => 'integer',      // 状态 - 整数类型
+        'sort_order' => 'integer',  // 排序顺序 - 整数类型
+        'created_by' => 'integer',  // 创建者ID - 整数类型
+        'updated_by' => 'integer'   // 更新者ID - 整数类型
     ];
 
     // 关联创建人
@@ -40,13 +43,13 @@ class AgentLevels extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    // 状态范围查询
+    // 状态范围查询 - 只获取启用状态的数据
     public function scopeActive($query)
     {
         return $query->where('status', 1);
     }
 
-    // 排序范围查询
+    // 排序范围查询 - 按排序字段和ID升序排列
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')->orderBy('id');
