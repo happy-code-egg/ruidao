@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 // 公开路由（无需认证）
 Route::group(['namespace' => 'Api'], function () {
     // 用户认证
-    Route::post('/login', 'AuthController@login')->name('login');
+    Route::post('/login', 'AuthController@login')->name('login');// 登录
 
         // 基础数据接口（无需特殊权限）
         // 获取部门列表接口 - 返回启用状态的部门信息，用于下拉选择组件，包含部门ID和名称
@@ -85,11 +85,11 @@ Route::group(['namespace' => 'Api'], function () {
     Route::get('/workflow-instances/{instanceId}/backable-nodes', 'WorkflowInstanceController@getBackableNodes')->name('api.workflow.instances.backable.nodes');
 
     // 首页Dashboard（临时移到公开路由用于测试）
-    Route::get('/dashboard/statistics', 'DashboardController@statistics')->name('api.dashboard.statistics');
-    Route::get('/dashboard/my-tasks', 'DashboardController@myTasks')->name('api.dashboard.my.tasks');
-    Route::get('/dashboard/recent-activities', 'DashboardController@recentActivities')->name('api.dashboard.recent.activities');
-    Route::get('/dashboard/notifications', 'DashboardController@notifications')->name('api.dashboard.notifications');
-    Route::get('/dashboard/quick-actions', 'DashboardController@quickActions')->name('api.dashboard.quick.actions');
+    Route::get('/dashboard/statistics', 'DashboardController@statistics')->name('api.dashboard.statistics');//获取首页统计数据
+    Route::get('/dashboard/my-tasks', 'DashboardController@myTasks')->name('api.dashboard.my.tasks');//获取我的待办任务 (myTasks)
+    Route::get('/dashboard/recent-activities', 'DashboardController@recentActivities')->name('api.dashboard.recent.activities');//获取最新动态 (recentActivities)
+    Route::get('/dashboard/notifications', 'DashboardController@notifications')->name('api.dashboard.notifications');//获取通知 (notifications)
+    Route::get('/dashboard/quick-actions', 'DashboardController@quickActions')->name('api.dashboard.quick.actions');//获取快捷操作 (quickActions)
 
     // 合同管理（已移至认证路由组）
 
@@ -142,28 +142,28 @@ Route::group(['namespace' => 'Api'], function () {
     });
 
     // 客户等级和相关类型设置（临时移到公开路由用于测试）
-    Route::get('/test-customer-levels', 'CustomerLevelsController@index')->name('api.test.customer.levels.index');
-    Route::get('/test-customer-levels/options', 'CustomerLevelsController@options')->name('api.test.customer.levels.options');
+    Route::get('/test-customer-levels', 'CustomerLevelsController@index')->name('api.test.customer.levels.index');//根据筛选条件获取客户等级列表，支持分页和排序
+    Route::get('/test-customer-levels/options', 'CustomerLevelsController@options')->name('api.test.customer.levels.options');//获取选项列表（用于下拉框等）
     Route::get('/test-related-types', 'RelatedTypesController@index')->name('api.test.related.types.index');
     Route::get('/test-related-types/case-type-options', 'RelatedTypesController@getCaseTypeOptions')->name('api.test.related.types.case.type.options');
 
     // 通知规则管理（临时移到公开路由用于测试）
-    Route::get('/notification-rules', 'NotificationRuleController@index')->name('api.notification.rules.index');
-    Route::get('/notification-rules/file-types', 'NotificationRuleController@getFileTypeTree')->name('api.notification.rules.file.types');
-    Route::get('/notification-rules/file-category/{id}/rules', 'NotificationRuleController@getRulesByFileCategory')->name('api.notification.rules.file.category.rules');
-    Route::get('/notification-rules/rule-types', 'NotificationRuleController@getRuleTypes')->name('api.notification.rules.rule.types');
-    Route::get('/notification-rules/process-items', 'NotificationRuleController@getProcessItems')->name('api.notification.rules.process.items');
-    Route::get('/notification-rules/process-statuses', 'NotificationRuleController@getProcessStatuses')->name('api.notification.rules.process.statuses');
-    Route::get('/notification-rules/users', 'NotificationRuleController@getUsers')->name('api.notification.rules.users');
-    Route::get('/notification-rules/countries', 'NotificationRuleController@getCountries')->name('api.notification.rules.countries');
-    Route::get('/notification-rules/case-types', 'NotificationRuleController@getCaseTypes')->name('api.notification.rules.case.types');
-    Route::post('/notification-rules', 'NotificationRuleController@store')->name('api.notification.rules.store');
-    Route::get('/notification-rules/{id}', 'NotificationRuleController@show')->name('api.notification.rules.show');
-    Route::put('/notification-rules/{id}', 'NotificationRuleController@update')->name('api.notification.rules.update');
-    Route::delete('/notification-rules/{id}', 'NotificationRuleController@destroy')->name('api.notification.rules.destroy');
-    Route::put('/notification-rules/{id}/toggle-status', 'NotificationRuleController@toggleStatus')->name('api.notification.rules.toggle.status');
-    Route::post('/notification-rules/{id}/test', 'NotificationRuleController@testRule')->name('api.notification.rules.test');
-    Route::post('/notification-rules/batch', 'NotificationRuleController@batchOperation')->name('api.notification.rules.batch');
+    Route::get('/notification-rules', 'NotificationRuleController@index')->name('api.notification.rules.index');//获取通知规则列表
+    Route::get('/notification-rules/file-types', 'NotificationRuleController@getFileTypeTree')->name('api.notification.rules.file.types');//获取文件类型树
+    Route::get('/notification-rules/file-category/{id}/rules', 'NotificationRuleController@getRulesByFileCategory')->name('api.notification.rules.file.category.rules');//获取文件分类下的规则
+    Route::get('/notification-rules/rule-types', 'NotificationRuleController@getRuleTypes')->name('api.notification.rules.rule.types');//获取规则类型
+    Route::get('/notification-rules/process-items', 'NotificationRuleController@getProcessItems')->name('api.notification.rules.process.items');//获取流程项
+    Route::get('/notification-rules/process-statuses', 'NotificationRuleController@getProcessStatuses')->name('api.notification.rules.process.statuses');//获取处理事项状态
+    Route::get('/notification-rules/users', 'NotificationRuleController@getUsers')->name('api.notification.rules.users');//获取用户列表
+    Route::get('/notification-rules/countries', 'NotificationRuleController@getCountries')->name('api.notification.rules.countries');//获取国家列表
+    Route::get('/notification-rules/case-types', 'NotificationRuleController@getCaseTypes')->name('api.notification.rules.case.types');//获取项目类型
+    Route::post('/notification-rules', 'NotificationRuleController@store')->name('api.notification.rules.store');//创建通知规则
+    Route::get('/notification-rules/{id}', 'NotificationRuleController@show')->name('api.notification.rules.show');//获取通知规则详情
+    Route::put('/notification-rules/{id}', 'NotificationRuleController@update')->name('api.notification.rules.update');//更新通知规则
+    Route::delete('/notification-rules/{id}', 'NotificationRuleController@destroy')->name('api.notification.rules.destroy');//删除通知规则
+    Route::put('/notification-rules/{id}/toggle-status', 'NotificationRuleController@toggleStatus')->name('api.notification.rules.toggle.status');//切换通知规则状态
+    Route::post('/notification-rules/{id}/test', 'NotificationRuleController@testRule')->name('api.notification.rules.test');//无
+    Route::post('/notification-rules/batch', 'NotificationRuleController@batchOperation')->name('api.notification.rules.batch');//批量操作
 
     // 流程规则管理（临时移到公开路由用于测试）
     Route::get('/process-rules', 'ProcessRuleController@index')->name('api.process.rules.index');
@@ -202,11 +202,11 @@ Route::group(['namespace' => 'Api'], function () {
     Route::put('/customer-applicants/{id}', 'CustomerApplicantController@update')->name('api.test.customer.applicants.update');
     Route::delete('/customer-applicants/{id}', 'CustomerApplicantController@destroy')->name('api.test.customer.applicants.destroy');
 
-    Route::get('/customer-inventors', 'CustomerInventorController@index')->name('api.test.customer.inventors.index');
-    Route::post('/customer-inventors', 'CustomerInventorController@store')->name('api.test.customer.inventors.store');
-    Route::get('/customer-inventors/{id}', 'CustomerInventorController@show')->name('api.test.customer.inventors.show');
-    Route::put('/customer-inventors/{id}', 'CustomerInventorController@update')->name('api.test.customer.inventors.update');
-    Route::delete('/customer-inventors/{id}', 'CustomerInventorController@destroy')->name('api.test.customer.inventors.destroy');
+    Route::get('/customer-inventors', 'CustomerInventorController@index')->name('api.test.customer.inventors.index');//获取客户发明人列表
+    Route::post('/customer-inventors', 'CustomerInventorController@store')->name('api.test.customer.inventors.store');//创建客户发明人
+    Route::get('/customer-inventors/{id}', 'CustomerInventorController@show')->name('api.test.customer.inventors.show');//获取客户发明人详情
+    Route::put('/customer-inventors/{id}', 'CustomerInventorController@update')->name('api.test.customer.inventors.update');//修改客户发明人
+    Route::delete('/customer-inventors/{id}', 'CustomerInventorController@destroy')->name('api.test.customer.inventors.destroy');//删除客户发明人
 
     // 三个数据配置页面测试路由（临时）
     Route::get('/test-commission-settings', 'CommissionSettingsController@index')->name('api.test.commission.settings.index');
@@ -234,13 +234,13 @@ Route::group(['namespace' => 'Api'], function () {
     Route::post('/data-config/price-indices/batch-status', 'PriceIndicesController@batchUpdateStatus')->name('api.price.indices.batch.status');
 
     // 创新指数设置（移到公开路由，前端可以直接访问）
-    Route::get('/data-config/innovation-indices', 'InnovationIndicesController@index')->name('api.innovation.indices.index');
-    Route::get('/data-config/innovation-indices/options', 'InnovationIndicesController@options')->name('api.innovation.indices.options');
-    Route::post('/data-config/innovation-indices', 'InnovationIndicesController@store')->name('api.innovation.indices.store');
-    Route::get('/data-config/innovation-indices/{id}', 'InnovationIndicesController@show')->name('api.innovation.indices.show');
-    Route::put('/data-config/innovation-indices/{id}', 'InnovationIndicesController@update')->name('api.innovation.indices.update');
-    Route::delete('/data-config/innovation-indices/{id}', 'InnovationIndicesController@destroy')->name('api.innovation.indices.destroy');
-    Route::post('/data-config/innovation-indices/batch-status', 'InnovationIndicesController@batchUpdateStatus')->name('api.innovation.indices.batch.status');
+    Route::get('/data-config/innovation-indices', 'InnovationIndicesController@index')->name('api.innovation.indices.index');//获取创新指数列表
+    Route::get('/data-config/innovation-indices/options', 'InnovationIndicesController@options')->name('api.innovation.indices.options');//获取选项列表（用于下拉框等）
+    Route::post('/data-config/innovation-indices', 'InnovationIndicesController@store')->name('api.innovation.indices.store');//无
+    Route::get('/data-config/innovation-indices/{id}', 'InnovationIndicesController@show')->name('api.innovation.indices.show');//无
+    Route::put('/data-config/innovation-indices/{id}', 'InnovationIndicesController@update')->name('api.innovation.indices.update');//无
+    Route::delete('/data-config/innovation-indices/{id}', 'InnovationIndicesController@destroy')->name('api.innovation.indices.destroy');//无
+    Route::post('/data-config/innovation-indices/batch-status', 'InnovationIndicesController@batchUpdateStatus')->name('api.innovation.indices.batch.status');//无
 
     // 产品设置（移到公开路由，前端可以直接访问）
     Route::get('/data-config/products', 'ProductController@index')->name('api.products.index');
@@ -252,13 +252,13 @@ Route::group(['namespace' => 'Api'], function () {
     Route::post('/data-config/products/batch-status', 'ProductController@batchUpdateStatus')->name('api.products.batch.status');
 
     // 业务服务类型设置（移到公开路由，前端可以直接访问）
-    Route::get('/data-config/business-service-types', 'BusinessServiceTypesController@index')->name('api.business.service.types.index');
-    Route::get('/data-config/business-service-types/options', 'BusinessServiceTypesController@options')->name('api.business.service.types.options');
-    Route::post('/data-config/business-service-types', 'BusinessServiceTypesController@store')->name('api.business.service.types.store');
-    Route::get('/data-config/business-service-types/{id}', 'BusinessServiceTypesController@show')->name('api.business.service.types.show');
-    Route::put('/data-config/business-service-types/{id}', 'BusinessServiceTypesController@update')->name('api.business.service.types.update');
-    Route::delete('/data-config/business-service-types/{id}', 'BusinessServiceTypesController@destroy')->name('api.business.service.types.destroy');
-    Route::post('/data-config/business-service-types/batch-status', 'BusinessServiceTypesController@batchUpdateStatus')->name('api.business.service.types.batch.status');
+    Route::get('/data-config/business-service-types', 'BusinessServiceTypesController@index')->name('api.business.service.types.index');//重写 index 方法，支持按名称、业务类别、状态搜索业务服务类型列表
+    Route::get('/data-config/business-service-types/options', 'BusinessServiceTypesController@options')->name('api.business.service.types.options');//无
+    Route::post('/data-config/business-service-types', 'BusinessServiceTypesController@store')->name('api.business.service.types.store');//无
+    Route::get('/data-config/business-service-types/{id}', 'BusinessServiceTypesController@show')->name('api.business.service.types.show');//无
+    Route::put('/data-config/business-service-types/{id}', 'BusinessServiceTypesController@update')->name('api.business.service.types.update');//无
+    Route::delete('/data-config/business-service-types/{id}', 'BusinessServiceTypesController@destroy')->name('api.business.service.types.destroy');//无
+    Route::post('/data-config/business-service-types/batch-status', 'BusinessServiceTypesController@batchUpdateStatus')->name('api.business.service.types.batch.status');//无
 
     // 处理事项类型设置（移到公开路由，前端可以直接访问）
     Route::get('/data-config/process-types', 'ProcessTypesController@index')->name('api.process.types.index');
@@ -327,11 +327,11 @@ Route::group(['namespace' => 'Api'], function () {
     Route::post('/customers/contract-case-records/{id}/cancel-case', 'CustomerController@cancelCaseFromRecord')->name('api.customers.contract.case.records.cancel.case');
 
     // 文件管理查询（公开访问）
-    Route::get('/search/files', 'FileSearchController@search')->name('api.search.files');
-    Route::post('/search/files/export', 'FileSearchController@export')->name('api.search.files.export');
-    Route::post('/search/files/batch-download', 'FileSearchController@batchDownload')->name('api.search.files.batch.download');
-    Route::get('/search/files/options', 'FileSearchController@getOptions')->name('api.search.files.options');
-    Route::get('/search/files/download/{id}', 'FileSearchController@downloadFile')->name('api.search.files.download');
+    Route::get('/search/files', 'FileSearchController@search')->name('api.search.files');// 文件搜索
+    Route::post('/search/files/export', 'FileSearchController@export')->name('api.search.files.export');// 文件导出
+    Route::post('/search/files/batch-download', 'FileSearchController@batchDownload')->name('api.search.files.batch.download');// 批量下载
+    Route::get('/search/files/options', 'FileSearchController@getOptions')->name('api.search.files.options');//获取下拉选项数据
+    Route::get('/search/files/download/{id}', 'FileSearchController@downloadFile')->name('api.search.files.download');//文件下载
 
     // 基础路由放在最后
     Route::get('/customers', 'CustomerController@index')->name('api.customers.index');
@@ -356,11 +356,11 @@ Route::group(['namespace' => 'Api'], function () {
     Route::delete('/customer-applicants/{id}', 'CustomerApplicantController@destroy')->name('api.customer.applicants.destroy');
 
     // 客户发明人管理
-    Route::get('/customer-inventors', 'CustomerInventorController@index')->name('api.customer.inventors.index');
-    Route::post('/customer-inventors', 'CustomerInventorController@store')->name('api.customer.inventors.store');
-    Route::get('/customer-inventors/{id}', 'CustomerInventorController@show')->name('api.customer.inventors.show');
-    Route::put('/customer-inventors/{id}', 'CustomerInventorController@update')->name('api.customer.inventors.update');
-    Route::delete('/customer-inventors/{id}', 'CustomerInventorController@destroy')->name('api.customer.inventors.destroy');
+    Route::get('/customer-inventors', 'CustomerInventorController@index')->name('api.customer.inventors.index');// 获取客户发明人列表
+    Route::post('/customer-inventors', 'CustomerInventorController@store')->name('api.customer.inventors.store');////创建客户发明人
+    Route::get('/customer-inventors/{id}', 'CustomerInventorController@show')->name('api.customer.inventors.show');// 获取客户发明人
+    Route::put('/customer-inventors/{id}', 'CustomerInventorController@update')->name('api.customer.inventors.update');// 更新客户发明人
+    Route::delete('/customer-inventors/{id}', 'CustomerInventorController@destroy')->name('api.customer.inventors.destroy');// 删除客户发明人
 
     // 客户合同管理
     Route::get('/customer-contracts', 'CustomerContractController@index')->name('api.customer.contracts.index');
@@ -370,28 +370,28 @@ Route::group(['namespace' => 'Api'], function () {
     Route::delete('/customer-contracts/{id}', 'CustomerContractController@destroy')->name('api.customer.contracts.destroy');
 
     // 客户相关人员管理
-    Route::get('/customer-related-persons', 'CustomerRelatedPersonController@index')->name('api.customer.related.persons.index');
-    Route::post('/customer-related-persons', 'CustomerRelatedPersonController@store')->name('api.customer.related.persons.store');
+    Route::get('/customer-related-persons', 'CustomerRelatedPersonController@index')->name('api.customer.related.persons.index');// 获取客户相关人员列表
+    Route::post('/customer-related-persons', 'CustomerRelatedPersonController@store')->name('api.customer.related.persons.store');// 创建客户相关人员
     // 具体路由必须放在 {id} 路由之前
-    Route::get('/customer-related-persons/person-types', 'CustomerRelatedPersonController@getPersonTypes')->name('api.customer.related.persons.person.types');
-    Route::get('/customer-related-persons/business-persons', 'CustomerRelatedPersonController@getCustomerBusinessPersons')->name('api.customer.related.persons.business.persons');
-    Route::get('/customer-related-persons/search-users', 'CustomerRelatedPersonController@searchUsers')->name('api.customer.related.persons.search.users');
-    Route::post('/customer-related-persons/add-business-person', 'CustomerRelatedPersonController@addCustomerBusinessPerson')->name('api.customer.related.persons.add.business.person');
-    Route::post('/customer-related-persons/remove-business-person', 'CustomerRelatedPersonController@removeCustomerBusinessPerson')->name('api.customer.related.persons.remove.business.person');
+    Route::get('/customer-related-persons/person-types', 'CustomerRelatedPersonController@getPersonTypes')->name('api.customer.related.persons.person.types');// 获取客户相关人员类型
+    Route::get('/customer-related-persons/business-persons', 'CustomerRelatedPersonController@getCustomerBusinessPersons')->name('api.customer.related.persons.business.persons');// 获取客户相关人员
+    Route::get('/customer-related-persons/search-users', 'CustomerRelatedPersonController@searchUsers')->name('api.customer.related.persons.search.users');//搜索用户（用于添加助理/协作人）
+    Route::post('/customer-related-persons/add-business-person', 'CustomerRelatedPersonController@addCustomerBusinessPerson')->name('api.customer.related.persons.add.business.person');//添加客户相关人员
+    Route::post('/customer-related-persons/remove-business-person', 'CustomerRelatedPersonController@removeCustomerBusinessPerson')->name('api.customer.related.persons.remove.business.person');//删除客户相关人员
     // 通用 {id} 路由放在最后
-    Route::get('/customer-related-persons/{id}', 'CustomerRelatedPersonController@show')->name('api.customer.related.persons.show');
-    Route::put('/customer-related-persons/{id}', 'CustomerRelatedPersonController@update')->name('api.customer.related.persons.update');
-    Route::delete('/customer-related-persons/{id}', 'CustomerRelatedPersonController@destroy')->name('api.customer.related.persons.destroy');
+    Route::get('/customer-related-persons/{id}', 'CustomerRelatedPersonController@show')->name('api.customer.related.persons.show');// 获取客户相关人员
+    Route::put('/customer-related-persons/{id}', 'CustomerRelatedPersonController@update')->name('api.customer.related.persons.update');// 更新客户相关人员
+    Route::delete('/customer-related-persons/{id}', 'CustomerRelatedPersonController@destroy')->name('api.customer.related.persons.destroy');// 删除客户相关人员
 
     // 案例监控管理（临时移到公开路由用于测试）
-    Route::get('/case-monitor/item-monitor', 'CaseMonitorController@itemMonitor')->name('api.case.monitor.item');
-    Route::post('/case-monitor/item-monitor/export', 'CaseMonitorController@exportItemMonitor')->name('api.case.monitor.item.export');
-    Route::get('/case-monitor/fee-monitor', 'CaseMonitorController@feeMonitor')->name('api.case.monitor.fee');
-    Route::get('/case-monitor/fee-stats', 'CaseMonitorController@feeStats')->name('api.case.monitor.fee.stats');
-    Route::post('/case-monitor/fee-monitor/export', 'CaseMonitorController@exportFeeMonitor')->name('api.case.monitor.fee.export');
-    Route::get('/case-monitor/abnormal-fee', 'CaseMonitorController@abnormalFee')->name('api.case.monitor.abnormal.fee');
-    Route::post('/case-monitor/abnormal-fee/export', 'CaseMonitorController@exportAbnormalFee')->name('api.case.monitor.abnormal.fee.export');
-    Route::post('/case-monitor/abnormal-fee/mark-processed', 'CaseMonitorController@markAbnormalFeeProcessed')->name('api.case.monitor.abnormal.fee.mark.processed');
+    Route::get('/case-monitor/item-monitor', 'CaseMonitorController@itemMonitor')->name('api.case.monitor.item');//事项监控（查询案例处理事项列表）
+    Route::post('/case-monitor/item-monitor/export', 'CaseMonitorController@exportItemMonitor')->name('api.case.monitor.item.export');//导出事项监控数据
+    Route::get('/case-monitor/fee-monitor', 'CaseMonitorController@feeMonitor')->name('api.case.monitor.fee');//官费监控列表查询
+    Route::get('/case-monitor/fee-stats', 'CaseMonitorController@feeStats')->name('api.case.monitor.fee.stats');//  获取费用统计数据
+    Route::post('/case-monitor/fee-monitor/export', 'CaseMonitorController@exportFeeMonitor')->name('api.case.monitor.fee.export');// 导出官费监控数据
+    Route::get('/case-monitor/abnormal-fee', 'CaseMonitorController@abnormalFee')->name('api.case.monitor.abnormal.fee');// 官费监控（费用管理查询）
+    Route::post('/case-monitor/abnormal-fee/export', 'CaseMonitorController@exportAbnormalFee')->name('api.case.monitor.abnormal.fee.export');//导出异常官费数据
+    Route::post('/case-monitor/abnormal-fee/mark-processed', 'CaseMonitorController@markAbnormalFeeProcessed')->name('api.case.monitor.abnormal.fee.mark.processed');//标记异常费用已处理
 
     // 请款管理（临时移到公开路由用于测试）
     Route::get('/payment-requests', 'PaymentRequestController@index')->name('api.payment.requests.index');
@@ -406,15 +406,15 @@ Route::group(['namespace' => 'Api'], function () {
     Route::post('/payment-requests/export', 'PaymentRequestController@export')->name('api.payment.requests.export');
 
     // 到款管理（临时移到公开路由用于测试）
-    Route::get('/payment-receiveds', 'PaymentReceivedController@index')->name('api.payment.receiveds.index');
-    Route::get('/payment-receiveds/statistics', 'PaymentReceivedController@statistics')->name('api.payment.receiveds.statistics');
-    Route::get('/payment-receiveds/{id}', 'PaymentReceivedController@show')->name('api.payment.receiveds.show');
-    Route::post('/payment-receiveds', 'PaymentReceivedController@store')->name('api.payment.receiveds.store');
-    Route::put('/payment-receiveds/{id}', 'PaymentReceivedController@update')->name('api.payment.receiveds.update');
-    Route::delete('/payment-receiveds/{id}', 'PaymentReceivedController@destroy')->name('api.payment.receiveds.destroy');
-    Route::post('/payment-receiveds/{id}/submit', 'PaymentReceivedController@submit')->name('api.payment.receiveds.submit');
-    Route::post('/payment-receiveds/{id}/claim', 'PaymentReceivedController@claim')->name('api.payment.receiveds.claim');
-    Route::post('/payment-receiveds/export', 'PaymentReceivedController@export')->name('api.payment.receiveds.export');
+    Route::get('/payment-receiveds', 'PaymentReceivedController@index')->name('api.payment.receiveds.index');// 获取到款列表
+    Route::get('/payment-receiveds/statistics', 'PaymentReceivedController@statistics')->name('api.payment.receiveds.statistics');// 获取到款统计数据
+    Route::get('/payment-receiveds/{id}', 'PaymentReceivedController@show')->name('api.payment.receiveds.show');// 获取到款
+    Route::post('/payment-receiveds', 'PaymentReceivedController@store')->name('api.payment.receiveds.store');// 创建到款
+    Route::put('/payment-receiveds/{id}', 'PaymentReceivedController@update')->name('api.payment.receiveds.update');// 更新到款
+    Route::delete('/payment-receiveds/{id}', 'PaymentReceivedController@destroy')->name('api.payment.receiveds.destroy');// 删除到款
+    Route::post('/payment-receiveds/{id}/submit', 'PaymentReceivedController@submit')->name('api.payment.receiveds.submit');// 提交到款
+    Route::post('/payment-receiveds/{id}/claim', 'PaymentReceivedController@claim')->name('api.payment.receiveds.claim');// 认领到款
+    Route::post('/payment-receiveds/export', 'PaymentReceivedController@export')->name('api.payment.receiveds.export');// 导出到款数据
 
     // 核销管理（临时移到公开路由用于测试）
     Route::get('/write-offs/pending', 'WriteOffController@getPendingList')->name('api.write-offs.pending');
@@ -436,15 +436,15 @@ Route::group(['namespace' => 'Api'], function () {
     Route::get('/customers', 'CustomerController@index')->name('api.customers.index.public');
 
     // 分配管理（临时移到公开路由用于测试）
-    Route::get('/assignment/new-applications', 'AssignmentController@newApplications')->name('api.assignment.new.applications');
-    Route::get('/assignment/middle-cases', 'AssignmentController@middleCases')->name('api.assignment.middle.cases');
-    Route::get('/assignment/tech-service-cases', 'AssignmentController@techServiceCases')->name('api.assignment.tech.service.cases');
-    Route::get('/assignment/assigned-cases', 'AssignmentController@assignedCases')->name('api.assignment.assigned.cases');
-    Route::post('/assignment/batch-assign', 'AssignmentController@batchAssign')->name('api.assignment.batch.assign');
-    Route::post('/assignment/direct-assign', 'AssignmentController@directAssign')->name('api.assignment.direct.assign');
-    Route::post('/assignment/withdraw-assignment', 'AssignmentController@withdrawAssignment')->name('api.assignment.withdraw');
-    Route::get('/assignment/assignable-users', 'AssignmentController@getAssignableUsers')->name('api.assignment.assignable.users');
-    Route::get('/assignment/process-detail/{id}', 'AssignmentController@getProcessDetail')->name('api.assignment.process.detail');
+    Route::get('/assignment/new-applications', 'AssignmentController@newApplications')->name('api.assignment.new.applications');//获取新申请待分配列表
+    Route::get('/assignment/middle-cases', 'AssignmentController@middleCases')->name('api.assignment.middle.cases');//获取中间案待分配列表
+    Route::get('/assignment/tech-service-cases', 'AssignmentController@techServiceCases')->name('api.assignment.tech.service.cases');//获取科服待分配列表
+    Route::get('/assignment/assigned-cases', 'AssignmentController@assignedCases')->name('api.assignment.assigned.cases');//获取已分配列表
+    Route::post('/assignment/batch-assign', 'AssignmentController@batchAssign')->name('api.assignment.batch.assign');//批量分配处理事项
+    Route::post('/assignment/direct-assign', 'AssignmentController@directAssign')->name('api.assignment.direct.assign');// 直接分配（单个处理事项分配）
+    Route::post('/assignment/withdraw-assignment', 'AssignmentController@withdrawAssignment')->name('api.assignment.withdraw');//撤回分配
+    Route::get('/assignment/assignable-users', 'AssignmentController@getAssignableUsers')->name('api.assignment.assignable.users');// 获取可分配的用户列表
+    Route::get('/assignment/process-detail/{id}', 'AssignmentController@getProcessDetail')->name('api.assignment.process.detail');//获取处理事项详情
 
     // 提成管理（临时移到公开路由用于测试）
     Route::get('/commission/stats', 'CommissionController@getCommissionStats')->name('api.commission.stats');
@@ -485,13 +485,13 @@ Route::group(['namespace' => 'Api'], function () {
 // 需要认证的路由
 Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function () {
     // 认证相关
-    Route::post('/logout', 'AuthController@logout')->name('api.logout');
-    Route::get('/user/profile', 'AuthController@profile')->name('api.user.profile');
-    Route::put('/user/profile', 'AuthController@updateProfile')->name('api.user.profile.update');
-    Route::put('/user/change-password', 'AuthController@changePassword')->name('api.user.change.password');
+    Route::post('/logout', 'AuthController@logout')->name('api.logout');//登出
+    Route::get('/user/profile', 'AuthController@profile')->name('api.user.profile');//获取当前登录用户信息接口
+    Route::put('/user/profile', 'AuthController@updateProfile')->name('api.user.profile.update');//修改当前登录用户信息接口
+    Route::put('/user/change-password', 'AuthController@changePassword')->name('api.user.change.password');//修改当前登录用户密码接口
 
     // 通用文件上传
-    Route::post('/upload', 'FileUploadController@upload')->name('api.upload');
+    Route::post('/upload', 'FileUploadController@upload')->name('api.upload');//通用文件上传
 
     // 客户文件管理
     Route::get('/customer-files', 'CustomerFileController@index')->name('api.customer.files.index');
@@ -518,12 +518,12 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
 
     // 部门管理（需要权限）
     Route::group(['middleware' => 'permission:system.department'], function () {
-        Route::get('/departments', 'DepartmentController@index')->name('api.departments.index');
-        Route::get('/departments/managers', 'DepartmentController@getManagers')->name('api.departments.managers');
-        Route::post('/departments', 'DepartmentController@store')->name('api.departments.store');
-        Route::get('/departments/{id}', 'DepartmentController@show')->name('api.departments.show');
-        Route::put('/departments/{id}', 'DepartmentController@update')->name('api.departments.update');
-        Route::delete('/departments/{id}', 'DepartmentController@destroy')->name('api.departments.destroy');
+        Route::get('/departments', 'DepartmentController@index')->name('api.departments.index');//获取部门列表（树形结构）
+        Route::get('/departments/managers', 'DepartmentController@getManagers')->name('api.departments.managers');//获取部门列表（树形结构）
+        Route::post('/departments', 'DepartmentController@store')->name('api.departments.store');//添加部门
+        Route::get('/departments/{id}', 'DepartmentController@show')->name('api.departments.show');//获取部门详情
+        Route::put('/departments/{id}', 'DepartmentController@update')->name('api.departments.update');//修改部门
+        Route::delete('/departments/{id}', 'DepartmentController@destroy')->name('api.departments.destroy');//删除部门
     });
 
     // 角色管理（需要权限）
@@ -550,14 +550,14 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
 
     // 系统配置模块API（管理员可访问）
     // 日志管理（注意路由顺序，具体路径要在参数路径之前）
-    Route::get('/logs', 'LogsController@index')->name('api.logs.index');
-    Route::get('/logs/types', 'LogsController@getTypes')->name('api.logs.types');
-    Route::get('/logs/users', 'LogsController@getUsers')->name('api.logs.users');
-    Route::get('/logs/export', 'LogsController@export')->name('api.logs.export');
-    Route::delete('/logs/clear', 'LogsController@clear')->name('api.logs.clear');
-    Route::post('/logs/batch-delete', 'LogsController@batchDelete')->name('api.logs.batch.delete');
-    Route::get('/logs/{id}', 'LogsController@show')->name('api.logs.show');
-    Route::delete('/logs/{id}', 'LogsController@destroy')->name('api.logs.destroy');
+    Route::get('/logs', 'LogsController@index')->name('api.logs.index');//获取日志列表
+    Route::get('/logs/types', 'LogsController@getTypes')->name('api.logs.types');//获取日志类型列表
+    Route::get('/logs/users', 'LogsController@getUsers')->name('api.logs.users');//获取操作用户列表
+    Route::get('/logs/export', 'LogsController@export')->name('api.logs.export');//导出日志
+    Route::delete('/logs/clear', 'LogsController@clear')->name('api.logs.clear');//清空日志
+    Route::post('/logs/batch-delete', 'LogsController@batchDelete')->name('api.logs.batch.delete');//批量删除日志
+    Route::get('/logs/{id}', 'LogsController@show')->name('api.logs.show');//获取日志详情
+    Route::delete('/logs/{id}', 'LogsController@destroy')->name('api.logs.destroy');//删除日志
 
     // 工作流管理 - 暂时移至此处进行测试
     // Route::get('/workflows', 'WorkflowController@index')->name('api.workflows.index');
@@ -614,23 +614,23 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
 
     // 项目管理（需要权限）
     Route::group(['middleware' => ['auth:sanctum']], function () {
-        Route::get('/cases', 'CaseController@index')->name('api.cases.index');
-        Route::post('/cases', 'CaseController@store')->name('api.cases.store');
-        Route::get('/cases/{id}', 'CaseController@show')->name('api.cases.show');
-        Route::put('/cases/{id}', 'CaseController@update')->name('api.cases.update');
-        Route::delete('/cases/{id}', 'CaseController@destroy')->name('api.cases.destroy');
+        Route::get('/cases', 'CaseController@index')->name('api.cases.index');//获取案件列表
+        Route::post('/cases', 'CaseController@store')->name('api.cases.store');//创建案件
+        Route::get('/cases/{id}', 'CaseController@show')->name('api.cases.show');//获取案件详情
+        Route::put('/cases/{id}', 'CaseController@update')->name('api.cases.update');//更新案件
+        Route::delete('/cases/{id}', 'CaseController@destroy')->name('api.cases.destroy');//删除案件
 
         // 项目费用明细
-        Route::get('/cases/{id}/fees', 'CaseFeeController@index')->name('api.cases.fees.index');
-        Route::post('/cases/{id}/fees', 'CaseFeeController@store')->name('api.cases.fees.store');
-        Route::put('/case-fees/{feeId}', 'CaseFeeController@update')->name('api.case.fees.update');
-        Route::delete('/case-fees/{feeId}', 'CaseFeeController@destroy')->name('api.case.fees.destroy');
+        Route::get('/cases/{id}/fees', 'CaseFeeController@index')->name('api.cases.fees.index');//获取指定案件的费用列表
+        Route::post('/cases/{id}/fees', 'CaseFeeController@store')->name('api.cases.fees.store');//为指定案件创建费用记录
+        Route::put('/case-fees/{feeId}', 'CaseFeeController@update')->name('api.case.fees.update');//更新指定费用记录
+        Route::delete('/case-fees/{feeId}', 'CaseFeeController@destroy')->name('api.case.fees.destroy');//删除指定费用记录
 
         // 项目附件明细
-        Route::get('/cases/{id}/attachments', 'CaseAttachmentController@index')->name('api.cases.attachments.index');
-        Route::post('/cases/{id}/attachments', 'CaseAttachmentController@store')->name('api.cases.attachments.store');
-        Route::post('/cases/{id}/attachments/upload', 'CaseAttachmentController@upload')->name('api.cases.attachments.upload');
-        Route::delete('/case-attachments/{id}', 'CaseAttachmentController@destroy')->name('api.case.attachments.destroy');
+        Route::get('/cases/{id}/attachments', 'CaseAttachmentController@index')->name('api.cases.attachments.index');// 获取项目附件列表
+        Route::post('/cases/{id}/attachments', 'CaseAttachmentController@store')->name('api.cases.attachments.store');// 创建项目附件记录
+        Route::post('/cases/{id}/attachments/upload', 'CaseAttachmentController@upload')->name('api.cases.attachments.upload');// 上传项目附件
+        Route::delete('/case-attachments/{id}', 'CaseAttachmentController@destroy')->name('api.case.attachments.destroy');// 删除项目附件记录
 
         // 个人项目管理
         Route::get('/personal-cases', 'PersonalCaseController@index')->name('api.personal.cases.index');
@@ -663,12 +663,12 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
 
     // 数据配置模块（暂时移除权限检查）
     // 客户等级设置
-    Route::get('/config/customer-levels', 'CustomerLevelsController@index')->name('api.config.customer.levels.index');
-    Route::post('/config/customer-levels', 'CustomerLevelsController@store')->name('api.config.customer.levels.store');
-    Route::get('/config/customer-levels/{id}', 'CustomerLevelsController@show')->name('api.config.customer.levels.show');
-    Route::put('/config/customer-levels/{id}', 'CustomerLevelsController@update')->name('api.config.customer.levels.update');
-    Route::delete('/config/customer-levels/{id}', 'CustomerLevelsController@destroy')->name('api.config.customer.levels.destroy');
-    Route::get('/config/customer-levels/options', 'CustomerLevelsController@options')->name('api.config.customer.levels.options');
+    Route::get('/config/customer-levels', 'CustomerLevelsController@index')->name('api.config.customer.levels.index');//获取客户等级列表
+    Route::post('/config/customer-levels', 'CustomerLevelsController@store')->name('api.config.customer.levels.store');//无
+    Route::get('/config/customer-levels/{id}', 'CustomerLevelsController@show')->name('api.config.customer.levels.show');//无
+    Route::put('/config/customer-levels/{id}', 'CustomerLevelsController@update')->name('api.config.customer.levels.update');//无
+    Route::delete('/config/customer-levels/{id}', 'CustomerLevelsController@destroy')->name('api.config.customer.levels.destroy');//无
+    Route::get('/config/customer-levels/options', 'CustomerLevelsController@options')->name('api.config.customer.levels.options');//获取选项列表（用于下拉框等）
 
     // 相关类型设置
     Route::get('/config/related-types', 'RelatedTypesController@index')->name('api.config.related.types.index');
@@ -680,21 +680,21 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     Route::get('/config/related-types/case-type-options', 'RelatedTypesController@getCaseTypeOptions')->name('api.config.related.types.case.type.options');
 
     // 开票服务类型设置
-    Route::get('/config/invoice-services', 'InvoiceServicesController@index')->name('api.config.invoice.services.index');
-    Route::post('/config/invoice-services', 'InvoiceServicesController@store')->name('api.config.invoice.services.store');
-    Route::get('/config/invoice-services/{id}', 'InvoiceServicesController@show')->name('api.config.invoice.services.show');
-    Route::put('/config/invoice-services/{id}', 'InvoiceServicesController@update')->name('api.config.invoice.services.update');
-    Route::delete('/config/invoice-services/{id}', 'InvoiceServicesController@destroy')->name('api.config.invoice.services.destroy');
-    Route::get('/config/invoice-services/options', 'InvoiceServicesController@options')->name('api.config.invoice.services.options');
+    Route::get('/config/invoice-services', 'InvoiceServicesController@index')->name('api.config.invoice.services.index');//获取开票服务类型列表
+    Route::post('/config/invoice-services', 'InvoiceServicesController@store')->name('api.config.invoice.services.store');// 创建新的开票服务类型记录
+    Route::get('/config/invoice-services/{id}', 'InvoiceServicesController@show')->name('api.config.invoice.services.show');//根据ID获取开票服务类型的详细信息
+    Route::put('/config/invoice-services/{id}', 'InvoiceServicesController@update')->name('api.config.invoice.services.update');//修改开票服务类型记录
+    Route::delete('/config/invoice-services/{id}', 'InvoiceServicesController@destroy')->name('api.config.invoice.services.destroy');//无
+    Route::get('/config/invoice-services/options', 'InvoiceServicesController@options')->name('api.config.invoice.services.options');//无
 
     // 园区名称设置
-    Route::get('/config/parks', 'ParksConfigController@index')->name('api.config.parks.index');
-    Route::post('/config/parks', 'ParksConfigController@store')->name('api.config.parks.store');
-    Route::get('/config/parks/{id}', 'ParksConfigController@show')->name('api.config.parks.show');
-    Route::put('/config/parks/{id}', 'ParksConfigController@update')->name('api.config.parks.update');
-    Route::delete('/config/parks/{id}', 'ParksConfigController@destroy')->name('api.config.parks.destroy');
-    Route::get('/config/parks/options', 'ParksConfigController@options')->name('api.config.parks.options');
-    Route::post('/notification-rules/batch', 'NotificationRuleController@batchOperation')->name('api.notification.rules.batch');
+    Route::get('/config/parks', 'ParksConfigController@index')->name('api.config.parks.index');//获取园区名称列表
+    Route::post('/config/parks', 'ParksConfigController@store')->name('api.config.parks.store');//无
+    Route::get('/config/parks/{id}', 'ParksConfigController@show')->name('api.config.parks.show');//无
+    Route::put('/config/parks/{id}', 'ParksConfigController@update')->name('api.config.parks.update');//无
+    Route::delete('/config/parks/{id}', 'ParksConfigController@destroy')->name('api.config.parks.destroy');//无
+    Route::get('/config/parks/options', 'ParksConfigController@options')->name('api.config.parks.options');// 获取选项列表（用于下拉框等）
+    Route::post('/notification-rules/batch', 'NotificationRuleController@batchOperation')->name('api.notification.rules.batch');//批量操作
 
     // 流程规则管理路由已移至上方，避免重复
 
@@ -702,23 +702,23 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
 
     // 代理师管理
     Route::get('/agents', 'AgentController@index')->name('api.agents.index');// 获取代理师列表
-    Route::get('/agents/agencies', 'AgentController@getAgencies')->name('api.agents.agencies');
+    Route::get('/agents/agencies', 'AgentController@getAgencies')->name('api.agents.agencies');// 无
     Route::post('/agents', 'AgentController@store')->name('api.agents.store');//创建代理师
-    Route::get('/agents/{id}', 'AgentController@show')->name('api.agents.show');
+    Route::get('/agents/{id}', 'AgentController@show')->name('api.agents.show');//获取代理机构详情
     Route::put('/agents/{id}', 'AgentController@update')->name('api.agents.update');//更新代理是列表
-    Route::delete('/agents/{id}', 'AgentController@destroy')->name('api.agents.destroy');
+    Route::delete('/agents/{id}', 'AgentController@destroy')->name('api.agents.destroy');//删除代理师
 
     // 数据配置管理
     // 申请类型设置
-    Route::get('/data-config/apply-types', 'ApplyTypeController@index')->name('api.apply.types.index');
-    Route::get('/data-config/apply-types/options', 'ApplyTypeController@options')->name('api.apply.types.options');
-    Route::post('/data-config/apply-types', 'ApplyTypeController@store')->name('api.apply.types.store');
-    Route::get('/data-config/apply-types/{id}', 'ApplyTypeController@show')->name('api.apply.types.show');
-    Route::put('/data-config/apply-types/{id}', 'ApplyTypeController@update')->name('api.apply.types.update');
-    Route::delete('/data-config/apply-types/{id}', 'ApplyTypeController@destroy')->name('api.apply.types.destroy');
-    Route::post('/data-config/apply-types/batch-status', 'ApplyTypeController@batchUpdateStatus')->name('api.apply.types.batch.status');
-    Route::get('/data-config/apply-types/all/{caseType}', 'ApplyTypeController@all')->name('api.apply.types.all');
-    Route::get('/data-config/apply-types/all-by-country/{country}', 'ApplyTypeController@allByCountry')->name('api.apply.types.all.by.country');
+    Route::get('/data-config/apply-types', 'ApplyTypeController@index')->name('api.apply.types.index');//获取申请类型列表（重写方法）
+    Route::get('/data-config/apply-types/options', 'ApplyTypeController@options')->name('api.apply.types.options');//无
+    Route::post('/data-config/apply-types', 'ApplyTypeController@store')->name('api.apply.types.store');//创建申请类型
+    Route::get('/data-config/apply-types/{id}', 'ApplyTypeController@show')->name('api.apply.types.show');//获取申请类型详情
+    Route::put('/data-config/apply-types/{id}', 'ApplyTypeController@update')->name('api.apply.types.update');//更新申请类型
+    Route::delete('/data-config/apply-types/{id}', 'ApplyTypeController@destroy')->name('api.apply.types.destroy');//无
+    Route::post('/data-config/apply-types/batch-status', 'ApplyTypeController@batchUpdateStatus')->name('api.apply.types.batch.status');//无
+    Route::get('/data-config/apply-types/all/{caseType}', 'ApplyTypeController@all')->name('api.apply.types.all');//根据案件类型获取所有申请类型选项
+    Route::get('/data-config/apply-types/all-by-country/{country}', 'ApplyTypeController@allByCountry')->name('api.apply.types.all.by.country');//根据国家获取所有申请类型选项
 
     // 处理事项状态设置
     Route::get('/data-config/process-statuses', 'ProcessStatusController@index')->name('api.process.statuses.index');
@@ -730,76 +730,76 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     Route::post('/data-config/process-statuses/batch-status', 'ProcessStatusController@batchUpdateStatus')->name('api.process.statuses.batch.status');
 
     // 费用配置设置
-    Route::get('/data-config/fee-configs', 'FeeConfigController@index')->name('api.fee.configs.index');
-    Route::get('/data-config/fee-configs/options', 'FeeConfigController@options')->name('api.fee.configs.options');
-    Route::post('/data-config/fee-configs', 'FeeConfigController@store')->name('api.fee.configs.store');
-    Route::get('/data-config/fee-configs/{id}', 'FeeConfigController@show')->name('api.fee.configs.show');
-    Route::put('/data-config/fee-configs/{id}', 'FeeConfigController@update')->name('api.fee.configs.update');
-    Route::delete('/data-config/fee-configs/{id}', 'FeeConfigController@destroy')->name('api.fee.configs.destroy');
-    Route::post('/data-config/fee-configs/batch-status', 'FeeConfigController@batchUpdateStatus')->name('api.fee.configs.batch.status');
+    Route::get('/data-config/fee-configs', 'FeeConfigController@index')->name('api.fee.configs.index');//获取费用配置列表
+    Route::get('/data-config/fee-configs/options', 'FeeConfigController@options')->name('api.fee.configs.options');//无
+    Route::post('/data-config/fee-configs', 'FeeConfigController@store')->name('api.fee.configs.store');//创建费用配置
+    Route::get('/data-config/fee-configs/{id}', 'FeeConfigController@show')->name('api.fee.configs.show');//获取费用配置详情
+    Route::put('/data-config/fee-configs/{id}', 'FeeConfigController@update')->name('api.fee.configs.update');//更新费用配置
+    Route::delete('/data-config/fee-configs/{id}', 'FeeConfigController@destroy')->name('api.fee.configs.destroy');// 无
+    Route::post('/data-config/fee-configs/batch-status', 'FeeConfigController@batchUpdateStatus')->name('api.fee.configs.batch.status');// 无
 
     // 客户等级设置
-    Route::get('/data-config/customer-levels', 'CustomerLevelController@index')->name('api.customer.levels.index');
-    Route::get('/data-config/customer-levels/options', 'CustomerLevelController@options')->name('api.customer.levels.options');
-    Route::post('/data-config/customer-levels', 'CustomerLevelController@store')->name('api.customer.levels.store');
-    Route::get('/data-config/customer-levels/{id}', 'CustomerLevelController@show')->name('api.customer.levels.show');
-    Route::put('/data-config/customer-levels/{id}', 'CustomerLevelController@update')->name('api.customer.levels.update');
-    Route::delete('/data-config/customer-levels/{id}', 'CustomerLevelController@destroy')->name('api.customer.levels.destroy');
-    Route::post('/data-config/customer-levels/batch-status', 'CustomerLevelController@batchUpdateStatus')->name('api.customer.levels.batch.status');
+    Route::get('/data-config/customer-levels', 'CustomerLevelController@index')->name('api.customer.levels.index');//获取客户等级列表
+    Route::get('/data-config/customer-levels/options', 'CustomerLevelController@options')->name('api.customer.levels.options');//获取选项列表
+    Route::post('/data-config/customer-levels', 'CustomerLevelController@store')->name('api.customer.levels.store');//创建客户等级
+    Route::get('/data-config/customer-levels/{id}', 'CustomerLevelController@show')->name('api.customer.levels.show');// 获取客户发明人详情
+    Route::put('/data-config/customer-levels/{id}', 'CustomerLevelController@update')->name('api.customer.levels.update');//更新客户等级
+    Route::delete('/data-config/customer-levels/{id}', 'CustomerLevelController@destroy')->name('api.customer.levels.destroy');//删除客户等级
+    Route::post('/data-config/customer-levels/batch-status', 'CustomerLevelController@batchUpdateStatus')->name('api.customer.levels.batch.status');//批量更新状态
 
     // 跟进方式设置
-    Route::get('/data-config/follow-up-methods', 'FollowUpMethodController@index')->name('api.follow.up.methods.index');
-    Route::get('/data-config/follow-up-methods/options', 'FollowUpMethodController@options')->name('api.follow.up.methods.options');
-    Route::post('/data-config/follow-up-methods', 'FollowUpMethodController@store')->name('api.follow.up.methods.store');
-    Route::get('/data-config/follow-up-methods/{id}', 'FollowUpMethodController@show')->name('api.follow.up.methods.show');
-    Route::put('/data-config/follow-up-methods/{id}', 'FollowUpMethodController@update')->name('api.follow.up.methods.update');
-    Route::delete('/data-config/follow-up-methods/{id}', 'FollowUpMethodController@destroy')->name('api.follow.up.methods.destroy');
-    Route::post('/data-config/follow-up-methods/batch-status', 'FollowUpMethodController@batchUpdateStatus')->name('api.follow.up.methods.batch.status');
+    Route::get('/data-config/follow-up-methods', 'FollowUpMethodController@index')->name('api.follow.up.methods.index');//获取跟进方式列表
+    Route::get('/data-config/follow-up-methods/options', 'FollowUpMethodController@options')->name('api.follow.up.methods.options');// 无
+    Route::post('/data-config/follow-up-methods', 'FollowUpMethodController@store')->name('api.follow.up.methods.store');// 无
+    Route::get('/data-config/follow-up-methods/{id}', 'FollowUpMethodController@show')->name('api.follow.up.methods.show');// 无
+    Route::put('/data-config/follow-up-methods/{id}', 'FollowUpMethodController@update')->name('api.follow.up.methods.update');// 无
+    Route::delete('/data-config/follow-up-methods/{id}', 'FollowUpMethodController@destroy')->name('api.follow.up.methods.destroy');// 无
+    Route::post('/data-config/follow-up-methods/batch-status', 'FollowUpMethodController@batchUpdateStatus')->name('api.follow.up.methods.batch.status');// 无
 
     // 跟进类型设置
-    Route::get('/data-config/follow-up-types', 'FollowUpTypeController@index')->name('api.follow.up.types.index');
-    Route::get('/data-config/follow-up-types/options', 'FollowUpTypeController@options')->name('api.follow.up.types.options');
-    Route::post('/data-config/follow-up-types', 'FollowUpTypeController@store')->name('api.follow.up.types.store');
-    Route::get('/data-config/follow-up-types/{id}', 'FollowUpTypeController@show')->name('api.follow.up.types.show');
-    Route::put('/data-config/follow-up-types/{id}', 'FollowUpTypeController@update')->name('api.follow.up.types.update');
-    Route::delete('/data-config/follow-up-types/{id}', 'FollowUpTypeController@destroy')->name('api.follow.up.types.destroy');
-    Route::post('/data-config/follow-up-types/batch-status', 'FollowUpTypeController@batchUpdateStatus')->name('api.follow.up.types.batch.status');
+    Route::get('/data-config/follow-up-types', 'FollowUpTypeController@index')->name('api.follow.up.types.index');//获取跟进类型列表
+    Route::get('/data-config/follow-up-types/options', 'FollowUpTypeController@options')->name('api.follow.up.types.options');// 无
+    Route::post('/data-config/follow-up-types', 'FollowUpTypeController@store')->name('api.follow.up.types.store');// 无
+    Route::get('/data-config/follow-up-types/{id}', 'FollowUpTypeController@show')->name('api.follow.up.types.show');// 无
+    Route::put('/data-config/follow-up-types/{id}', 'FollowUpTypeController@update')->name('api.follow.up.types.update');// 无
+    Route::delete('/data-config/follow-up-types/{id}', 'FollowUpTypeController@destroy')->name('api.follow.up.types.destroy');// 无
+    Route::post('/data-config/follow-up-types/batch-status', 'FollowUpTypeController@batchUpdateStatus')->name('api.follow.up.types.batch.status');// 无
 
     // 商机状态设置
-    Route::get('/data-config/business-statuses', 'BusinessStatusController@index')->name('api.business.statuses.index');
-    Route::get('/data-config/business-statuses/options', 'BusinessStatusController@options')->name('api.business.statuses.options');
-    Route::post('/data-config/business-statuses', 'BusinessStatusController@store')->name('api.business.statuses.store');
-    Route::get('/data-config/business-statuses/{id}', 'BusinessStatusController@show')->name('api.business.statuses.show');
-    Route::put('/data-config/business-statuses/{id}', 'BusinessStatusController@update')->name('api.business.statuses.update');
-    Route::delete('/data-config/business-statuses/{id}', 'BusinessStatusController@destroy')->name('api.business.statuses.destroy');
-    Route::post('/data-config/business-statuses/batch-status', 'BusinessStatusController@batchUpdateStatus')->name('api.business.statuses.batch.status');
+    Route::get('/data-config/business-statuses', 'BusinessStatusController@index')->name('api.business.statuses.index');//获取商机状态列表
+    Route::get('/data-config/business-statuses/options', 'BusinessStatusController@options')->name('api.business.statuses.options');// 获取商机状态选项列表（用于下拉框等场景）
+    Route::post('/data-config/business-statuses', 'BusinessStatusController@store')->name('api.business.statuses.store');//添加商机状态
+    Route::get('/data-config/business-statuses/{id}', 'BusinessStatusController@show')->name('api.business.statuses.show');//获取商机状态详情
+    Route::put('/data-config/business-statuses/{id}', 'BusinessStatusController@update')->name('api.business.statuses.update');//修改商机状态
+    Route::delete('/data-config/business-statuses/{id}', 'BusinessStatusController@destroy')->name('api.business.statuses.destroy');//删除商机状态
+    Route::post('/data-config/business-statuses/batch-status', 'BusinessStatusController@batchUpdateStatus')->name('api.business.statuses.batch.status');//无
 
     // 商机类型设置
-    Route::get('/data-config/opportunity-types', 'OpportunityTypeController@index')->name('api.opportunity.types.index');
-    Route::get('/data-config/opportunity-types/options', 'OpportunityTypeController@options')->name('api.opportunity.types.options');
-    Route::post('/data-config/opportunity-types', 'OpportunityTypeController@store')->name('api.opportunity.types.store');
-    Route::get('/data-config/opportunity-types/{id}', 'OpportunityTypeController@show')->name('api.opportunity.types.show');
-    Route::put('/data-config/opportunity-types/{id}', 'OpportunityTypeController@update')->name('api.opportunity.types.update');
-    Route::delete('/data-config/opportunity-types/{id}', 'OpportunityTypeController@destroy')->name('api.opportunity.types.destroy');
-    Route::post('/data-config/opportunity-types/batch-status', 'OpportunityTypeController@batchUpdateStatus')->name('api.opportunity.types.batch.status');
+    Route::get('/data-config/opportunity-types', 'OpportunityTypeController@index')->name('api.opportunity.types.index');//获取商机类型列表
+    Route::get('/data-config/opportunity-types/options', 'OpportunityTypeController@options')->name('api.opportunity.types.options');//获取商机类型选项列表（用于下拉框等场景）
+    Route::post('/data-config/opportunity-types', 'OpportunityTypeController@store')->name('api.opportunity.types.store');//添加商机类型
+    Route::get('/data-config/opportunity-types/{id}', 'OpportunityTypeController@show')->name('api.opportunity.types.show');//获取商机类型详情
+    Route::put('/data-config/opportunity-types/{id}', 'OpportunityTypeController@update')->name('api.opportunity.types.update');//修改商机类型
+    Route::delete('/data-config/opportunity-types/{id}', 'OpportunityTypeController@destroy')->name('api.opportunity.types.destroy');//删除商机类型
+    Route::post('/data-config/opportunity-types/batch-status', 'OpportunityTypeController@batchUpdateStatus')->name('api.opportunity.types.batch.status');// 无
 
     // 跟进进度设置
-    Route::get('/data-config/follow-up-progresses', 'FollowUpProgressController@index')->name('api.follow.up.progresses.index');
-    Route::get('/data-config/follow-up-progresses/options', 'FollowUpProgressController@options')->name('api.follow.up.progresses.options');
-    Route::post('/data-config/follow-up-progresses', 'FollowUpProgressController@store')->name('api.follow.up.progresses.store');
-    Route::get('/data-config/follow-up-progresses/{id}', 'FollowUpProgressController@show')->name('api.follow.up.progresses.show');
-    Route::put('/data-config/follow-up-progresses/{id}', 'FollowUpProgressController@update')->name('api.follow.up.progresses.update');
-    Route::delete('/data-config/follow-up-progresses/{id}', 'FollowUpProgressController@destroy')->name('api.follow.up.progresses.destroy');
-    Route::post('/data-config/follow-up-progresses/batch-status', 'FollowUpProgressController@batchUpdateStatus')->name('api.follow.up.progresses.batch.status');
+    Route::get('/data-config/follow-up-progresses', 'FollowUpProgressController@index')->name('api.follow.up.progresses.index');//获取跟进进度列表
+    Route::get('/data-config/follow-up-progresses/options', 'FollowUpProgressController@options')->name('api.follow.up.progresses.options');// 无
+    Route::post('/data-config/follow-up-progresses', 'FollowUpProgressController@store')->name('api.follow.up.progresses.store');// 无
+    Route::get('/data-config/follow-up-progresses/{id}', 'FollowUpProgressController@show')->name('api.follow.up.progresses.show');// 无
+    Route::put('/data-config/follow-up-progresses/{id}', 'FollowUpProgressController@update')->name('api.follow.up.progresses.update');// 无
+    Route::delete('/data-config/follow-up-progresses/{id}', 'FollowUpProgressController@destroy')->name('api.follow.up.progresses.destroy');// 无
+    Route::post('/data-config/follow-up-progresses/batch-status', 'FollowUpProgressController@batchUpdateStatus')->name('api.follow.up.progresses.batch.status');// 无
 
     // 客户规模设置
-    Route::get('/data-config/customer-scales', 'CustomerScaleController@index')->name('api.customer.scales.index');
-    Route::get('/data-config/customer-scales/options', 'CustomerScaleController@options')->name('api.customer.scales.options');
-    Route::post('/data-config/customer-scales', 'CustomerScaleController@store')->name('api.customer.scales.store');
-    Route::get('/data-config/customer-scales/{id}', 'CustomerScaleController@show')->name('api.customer.scales.show');
-    Route::put('/data-config/customer-scales/{id}', 'CustomerScaleController@update')->name('api.customer.scales.update');
-    Route::delete('/data-config/customer-scales/{id}', 'CustomerScaleController@destroy')->name('api.customer.scales.destroy');
-    Route::post('/data-config/customer-scales/batch-status', 'CustomerScaleController@batchUpdateStatus')->name('api.customer.scales.batch.status');
+    Route::get('/data-config/customer-scales', 'CustomerScaleController@index')->name('api.customer.scales.index');//获取客户规模列表
+    Route::get('/data-config/customer-scales/options', 'CustomerScaleController@options')->name('api.customer.scales.options');// 获取客户规模选项列表（用于下拉框等场景）
+    Route::post('/data-config/customer-scales', 'CustomerScaleController@store')->name('api.customer.scales.store');//添加客户规模
+    Route::get('/data-config/customer-scales/{id}', 'CustomerScaleController@show')->name('api.customer.scales.show');//获取客户规模详情
+    Route::put('/data-config/customer-scales/{id}', 'CustomerScaleController@update')->name('api.customer.scales.update');//修改客户规模
+    Route::delete('/data-config/customer-scales/{id}', 'CustomerScaleController@destroy')->name('api.customer.scales.destroy');//删除客户规模
+    Route::post('/data-config/customer-scales/batch-status', 'CustomerScaleController@batchUpdateStatus')->name('api.customer.scales.batch.status');//无
 
 
 
@@ -824,21 +824,21 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     Route::post('/data-config/process-coefficients/batch-status', 'ProcessCoefficientsController@batchUpdateStatus')->name('api.process.coefficients.batch.status');
 
     // 项目处理事项管理
-    Route::get('/case-processes', 'CaseProcessController@index')->name('api.case.processes.index');
-    Route::post('/case-processes', 'CaseProcessController@store')->name('api.case.processes.store');
-    Route::get('/case-processes/{id}', 'CaseProcessController@show')->name('api.case.processes.show');
-    Route::put('/case-processes/{id}', 'CaseProcessController@update')->name('api.case.processes.update');
-    Route::delete('/case-processes/{id}', 'CaseProcessController@destroy')->name('api.case.processes.destroy');
-    Route::get('/case-processes/case/{caseId}', 'CaseProcessController@getByCaseId')->name('api.case.processes.by.case');
+    Route::get('/case-processes', 'CaseProcessController@index')->name('api.case.processes.index');//获取处理事项列表
+    Route::post('/case-processes', 'CaseProcessController@store')->name('api.case.processes.store');//创建处理事项
+    Route::get('/case-processes/{id}', 'CaseProcessController@show')->name('api.case.processes.show');//获取处理事项详情
+    Route::put('/case-processes/{id}', 'CaseProcessController@update')->name('api.case.processes.update');//修改处理事项
+    Route::delete('/case-processes/{id}', 'CaseProcessController@destroy')->name('api.case.processes.destroy');//删除处理事项
+    Route::get('/case-processes/case/{caseId}', 'CaseProcessController@getByCaseId')->name('api.case.processes.by.case');//根据项目 ID 获取处理事项列表
 
     // 项目系数设置
-    Route::get('/data-config/case-coefficients', 'CaseCoefficientController@index')->name('api.case.coefficients.index');
-    Route::get('/data-config/case-coefficients/options', 'CaseCoefficientController@options')->name('api.case.coefficients.options');
-    Route::post('/data-config/case-coefficients', 'CaseCoefficientController@store')->name('api.case.coefficients.store');
-    Route::get('/data-config/case-coefficients/{id}', 'CaseCoefficientController@show')->name('api.case.coefficients.show');
-    Route::put('/data-config/case-coefficients/{id}', 'CaseCoefficientController@update')->name('api.case.coefficients.update');
-    Route::delete('/data-config/case-coefficients/{id}', 'CaseCoefficientController@destroy')->name('api.case.coefficients.destroy');
-    Route::post('/data-config/case-coefficients/batch-status', 'CaseCoefficientController@batchUpdateStatus')->name('api.case.coefficients.batch.status');
+    Route::get('/data-config/case-coefficients', 'CaseCoefficientController@index')->name('api.case.coefficients.index');//获取项目系数列表
+    Route::get('/data-config/case-coefficients/options', 'CaseCoefficientController@options')->name('api.case.coefficients.options');// 获取项目系数选项列表（用于下拉框等选择场景）
+    Route::post('/data-config/case-coefficients', 'CaseCoefficientController@store')->name('api.case.coefficients.store');//创建项目系数
+    Route::get('/data-config/case-coefficients/{id}', 'CaseCoefficientController@show')->name('api.case.coefficients.show');//获取项目系数详情
+    Route::put('/data-config/case-coefficients/{id}', 'CaseCoefficientController@update')->name('api.case.coefficients.update');//更新项目系数
+    Route::delete('/data-config/case-coefficients/{id}', 'CaseCoefficientController@destroy')->name('api.case.coefficients.destroy');//删除项目系数
+    Route::post('/data-config/case-coefficients/batch-status', 'CaseCoefficientController@batchUpdateStatus')->name('api.case.coefficients.batch.status');//批量更新项目系数状态
 
 
 
@@ -863,25 +863,25 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
 
 
     // 文件分类设置
-    Route::get('/data-config/file-categories', 'FileCategoriesController@index')->name('api.file.categories.index');
-    Route::get('/data-config/file-categories/options', 'FileCategoriesController@options')->name('api.file.categories.options');
-    Route::post('/data-config/file-categories', 'FileCategoriesController@store')->name('api.file.categories.store');
-    Route::get('/data-config/file-categories/{id}', 'FileCategoriesController@show')->name('api.file.categories.show');
-    Route::put('/data-config/file-categories/{id}', 'FileCategoriesController@update')->name('api.file.categories.update');
-    Route::delete('/data-config/file-categories/{id}', 'FileCategoriesController@destroy')->name('api.file.categories.destroy');
-    Route::post('/data-config/file-categories/batch-status', 'FileCategoriesController@batchUpdateStatus')->name('api.file.categories.batch.status');
+    Route::get('/data-config/file-categories', 'FileCategoriesController@index')->name('api.file.categories.index');//获取文件分类列表
+    Route::get('/data-config/file-categories/options', 'FileCategoriesController@options')->name('api.file.categories.options');//获取文件分类选项列表（用于下拉框等选择场景）
+    Route::post('/data-config/file-categories', 'FileCategoriesController@store')->name('api.file.categories.store');//创建文件分类
+    Route::get('/data-config/file-categories/{id}', 'FileCategoriesController@show')->name('api.file.categories.show');//获取文件分类详情
+    Route::put('/data-config/file-categories/{id}', 'FileCategoriesController@update')->name('api.file.categories.update');//修改文件分类
+    Route::delete('/data-config/file-categories/{id}', 'FileCategoriesController@destroy')->name('api.file.categories.destroy');//删除文件分类
+    Route::post('/data-config/file-categories/batch-status', 'FileCategoriesController@batchUpdateStatus')->name('api.file.categories.batch.status');//无
 
     // 文件描述设置
-    Route::get('/data-config/file-descriptions', 'FileDescriptionsController@index')->name('api.file.descriptions.index');
-    Route::get('/data-config/file-descriptions/options', 'FileDescriptionsController@options')->name('api.file.descriptions.options');
-    Route::get('/data-config/file-descriptions/tree', 'FileDescriptionsController@getTree')->name('api.file.descriptions.tree');
-    Route::get('/data-config/file-descriptions/file-category-major', 'FileDescriptionsController@getFileCategoryMajor')->name('api.file.descriptions.file.category.major');
-    Route::get('/data-config/file-descriptions/file-category-minor', 'FileDescriptionsController@getFileCategoryMinor')->name('api.file.descriptions.file.category.minor');
-    Route::post('/data-config/file-descriptions', 'FileDescriptionsController@store')->name('api.file.descriptions.store');
-    Route::get('/data-config/file-descriptions/{id}', 'FileDescriptionsController@show')->name('api.file.descriptions.show');
-    Route::put('/data-config/file-descriptions/{id}', 'FileDescriptionsController@update')->name('api.file.descriptions.update');
-    Route::delete('/data-config/file-descriptions/{id}', 'FileDescriptionsController@destroy')->name('api.file.descriptions.destroy');
-    Route::post('/data-config/file-descriptions/batch-status', 'FileDescriptionsController@batchUpdateStatus')->name('api.file.descriptions.batch.status');
+    Route::get('/data-config/file-descriptions', 'FileDescriptionsController@index')->name('api.file.descriptions.index');//获取文件描述列表
+    Route::get('/data-config/file-descriptions/options', 'FileDescriptionsController@options')->name('api.file.descriptions.options');//获取文件描述选项列表（用于下拉框等选择场景）
+    Route::get('/data-config/file-descriptions/tree', 'FileDescriptionsController@getTree')->name('api.file.descriptions.tree');//获取文件描述树结构
+    Route::get('/data-config/file-descriptions/file-category-major', 'FileDescriptionsController@getFileCategoryMajor')->name('api.file.descriptions.file.category.major');//获取文件描述文件分类
+    Route::get('/data-config/file-descriptions/file-category-minor', 'FileDescriptionsController@getFileCategoryMinor')->name('api.file.descriptions.file.category.minor');//获取文件描述文件分类
+    Route::post('/data-config/file-descriptions', 'FileDescriptionsController@store')->name('api.file.descriptions.store');//创建文件描述
+    Route::get('/data-config/file-descriptions/{id}', 'FileDescriptionsController@show')->name('api.file.descriptions.show');//获取文件描述详情
+    Route::put('/data-config/file-descriptions/{id}', 'FileDescriptionsController@update')->name('api.file.descriptions.update');//修改文件描述
+    Route::delete('/data-config/file-descriptions/{id}', 'FileDescriptionsController@destroy')->name('api.file.descriptions.destroy');//删除文件描述
+    Route::post('/data-config/file-descriptions/batch-status', 'FileDescriptionsController@batchUpdateStatus')->name('api.file.descriptions.batch.status');//批量更新状态
 
 
 
@@ -894,12 +894,12 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     Route::delete('/data-config/copyright-expedite-types/{id}', 'CopyrightExpediteTypesController@destroy')->name('api.copyright.expedite.types.destroy');
 
     // 我方公司设置
-    Route::get('/data-config/our-companies', 'OurCompaniesController@index')->name('api.our.companies.index');
-    Route::get('/data-config/our-companies/options', 'OurCompaniesController@options')->name('api.our.companies.options');
-    Route::post('/data-config/our-companies', 'OurCompaniesController@store')->name('api.our.companies.store');
-    Route::get('/data-config/our-companies/{id}', 'OurCompaniesController@show')->name('api.our.companies.show');
-    Route::put('/data-config/our-companies/{id}', 'OurCompaniesController@update')->name('api.our.companies.update');
-    Route::delete('/data-config/our-companies/{id}', 'OurCompaniesController@destroy')->name('api.our.companies.destroy');
+    Route::get('/data-config/our-companies', 'OurCompaniesController@index')->name('api.our.companies.index');//获取我方公司列表
+    Route::get('/data-config/our-companies/options', 'OurCompaniesController@options')->name('api.our.companies.options');//获取我方公司选项列表（用于下拉框等选择场景）
+    Route::post('/data-config/our-companies', 'OurCompaniesController@store')->name('api.our.companies.store');//创建我方公司
+    Route::get('/data-config/our-companies/{id}', 'OurCompaniesController@show')->name('api.our.companies.show');//获取我方公司详情
+    Route::put('/data-config/our-companies/{id}', 'OurCompaniesController@update')->name('api.our.companies.update');//修改我方公司
+    Route::delete('/data-config/our-companies/{id}', 'OurCompaniesController@destroy')->name('api.our.companies.destroy');//删除我方公司
 
     // 提成类型设置
     Route::get('/data-config/commission-types', 'CommissionTypesController@index')->name('api.commission.types.index');
@@ -931,18 +931,18 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
 
 
     // 专利年费配置
-    Route::get('/data-config/patent-annual-fees', 'PatentAnnualFeesController@index')->name('api.patent.annual.fees.index');
-    Route::get('/data-config/patent-annual-fees/options', 'PatentAnnualFeesController@options')->name('api.patent.annual.fees.options');
-    Route::post('/data-config/patent-annual-fees', 'PatentAnnualFeesController@store')->name('api.patent.annual.fees.store');
-    Route::get('/data-config/patent-annual-fees/{id}', 'PatentAnnualFeesController@show')->name('api.patent.annual.fees.show');
-    Route::put('/data-config/patent-annual-fees/{id}', 'PatentAnnualFeesController@update')->name('api.patent.annual.fees.update');
-    Route::delete('/data-config/patent-annual-fees/{id}', 'PatentAnnualFeesController@destroy')->name('api.patent.annual.fees.destroy');
+    Route::get('/data-config/patent-annual-fees', 'PatentAnnualFeesController@index')->name('api.patent.annual.fees.index');//获取专利年费列表
+    Route::get('/data-config/patent-annual-fees/options', 'PatentAnnualFeesController@options')->name('api.patent.annual.fees.options');//获取专利年费选项列表（用于下拉框等选择场景）
+    Route::post('/data-config/patent-annual-fees', 'PatentAnnualFeesController@store')->name('api.patent.annual.fees.store');//创建专利年费
+    Route::get('/data-config/patent-annual-fees/{id}', 'PatentAnnualFeesController@show')->name('api.patent.annual.fees.show');//无
+    Route::put('/data-config/patent-annual-fees/{id}', 'PatentAnnualFeesController@update')->name('api.patent.annual.fees.update');//修改专利年费
+    Route::delete('/data-config/patent-annual-fees/{id}', 'PatentAnnualFeesController@destroy')->name('api.patent.annual.fees.destroy');//无
 
     // 专利年费详情管理
-    Route::get('/data-config/patent-annual-fees/{id}/details', 'PatentAnnualFeesController@getFeeDetails')->name('api.patent.annual.fees.details');
-    Route::post('/data-config/patent-annual-fee-details', 'PatentAnnualFeesController@createFeeDetail')->name('api.patent.annual.fee.details.store');
-    Route::put('/data-config/patent-annual-fee-details/{id}', 'PatentAnnualFeesController@updateFeeDetail')->name('api.patent.annual.fee.details.update');
-    Route::delete('/data-config/patent-annual-fee-details/{id}', 'PatentAnnualFeesController@deleteFeeDetail')->name('api.patent.annual.fee.details.destroy');
+    Route::get('/data-config/patent-annual-fees/{id}/details', 'PatentAnnualFeesController@getFeeDetails')->name('api.patent.annual.fees.details');//获取专利年费详情列表
+    Route::post('/data-config/patent-annual-fee-details', 'PatentAnnualFeesController@createFeeDetail')->name('api.patent.annual.fee.details.store');//创建专利年费详情
+    Route::put('/data-config/patent-annual-fee-details/{id}', 'PatentAnnualFeesController@updateFeeDetail')->name('api.patent.annual.fee.details.update');//修改专利年费详情
+    Route::delete('/data-config/patent-annual-fee-details/{id}', 'PatentAnnualFeesController@deleteFeeDetail')->name('api.patent.annual.fee.details.destroy');//删除专利年费详情
 
     // 科技服务类型设置
     Route::get('/data-config/tech-service-types', 'TechServiceTypesController@index')->name('api.tech.service.types.index');
@@ -1007,13 +1007,13 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     Route::delete('/data-config/tech-service-regions/{id}', 'TechServiceRegionsController@destroy')->name('api.tech.service.regions.destroy');
 
     // 审核打分项设置
-    Route::get('/data-config/manuscript-scoring-items', 'ManuscriptScoringItemsController@index')->name('api.manuscript.scoring.items.index');
-    Route::get('/data-config/manuscript-scoring-items/options', 'ManuscriptScoringItemsController@options')->name('api.manuscript.scoring.items.options');
-    Route::post('/data-config/manuscript-scoring-items', 'ManuscriptScoringItemsController@store')->name('api.manuscript.scoring.items.store');
-    Route::get('/data-config/manuscript-scoring-items/{id}', 'ManuscriptScoringItemsController@show')->name('api.manuscript.scoring.items.show');
-    Route::put('/data-config/manuscript-scoring-items/{id}', 'ManuscriptScoringItemsController@update')->name('api.manuscript.scoring.items.update');
+    Route::get('/data-config/manuscript-scoring-items', 'ManuscriptScoringItemsController@index')->name('api.manuscript.scoring.items.index');//无
+    Route::get('/data-config/manuscript-scoring-items/options', 'ManuscriptScoringItemsController@options')->name('api.manuscript.scoring.items.options');//无
+    Route::post('/data-config/manuscript-scoring-items', 'ManuscriptScoringItemsController@store')->name('api.manuscript.scoring.items.store');//无
+    Route::get('/data-config/manuscript-scoring-items/{id}', 'ManuscriptScoringItemsController@show')->name('api.manuscript.scoring.items.show');//无
+    Route::put('/data-config/manuscript-scoring-items/{id}', 'ManuscriptScoringItemsController@update')->name('api.manuscript.scoring.items.update');//无
     Route::delete('/data-config/manuscript-scoring-items/{id}', 'ManuscriptScoringItemsController@destroy')->name('api.manuscript.scoring.items.destroy');
-    Route::post('/data-config/manuscript-scoring-items/batch-status', 'ManuscriptScoringItemsController@batchUpdateStatus')->name('api.manuscript.scoring.items.batch.status');
+    Route::post('/data-config/manuscript-scoring-items/batch-status', 'ManuscriptScoringItemsController@batchUpdateStatus')->name('api.manuscript.scoring.items.batch.status');//无
 
     // 保护中心设置
     Route::get('/data-config/protection-centers', 'ProtectionCentersController@index')->name('api.protection.centers.index');
@@ -1025,14 +1025,14 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     Route::post('/data-config/protection-centers/batch-status', 'ProtectionCentersController@batchUpdateStatus')->name('api.protection.centers.batch.status');
 
     // 合同项目管理
-    Route::get('/contract-cases', 'ContractCaseController@index')->name('api.contract.cases.index');
-    Route::get('/contract-cases/{id}', 'ContractCaseController@show')->name('api.contract.cases.show');
-    Route::post('/contract-cases', 'ContractCaseController@store')->name('api.contract.cases.store');
-    Route::put('/contract-cases/{id}', 'ContractCaseController@update')->name('api.contract.cases.update');
-    Route::delete('/contract-cases/{id}', 'ContractCaseController@destroy')->name('api.contract.cases.destroy');
-    Route::post('/contract-cases/{id}/start-workflow', 'ContractCaseController@startWorkflow')->name('api.contract.cases.start.workflow');
-    Route::get('/contract-cases/{id}/workflow', 'ContractCaseController@getWorkflow')->name('api.contract.cases.workflow');
-    Route::get('/contract-cases/debug/pending', 'ContractCaseController@debugPendingData')->name('api.contract.cases.debug.pending');
+    Route::get('/contract-cases', 'ContractCaseController@index')->name('api.contract.cases.index');//  获取案例列表
+    Route::get('/contract-cases/{id}', 'ContractCaseController@show')->name('api.contract.cases.show');//获取案例详情
+    Route::post('/contract-cases', 'ContractCaseController@store')->name('api.contract.cases.store');// 创建案例
+    Route::put('/contract-cases/{id}', 'ContractCaseController@update')->name('api.contract.cases.update');// 更新案例
+    Route::delete('/contract-cases/{id}', 'ContractCaseController@destroy')->name('api.contract.cases.destroy');// 删除案例
+    Route::post('/contract-cases/{id}/start-workflow', 'ContractCaseController@startWorkflow')->name('api.contract.cases.start.workflow');//无
+    Route::get('/contract-cases/{id}/workflow', 'ContractCaseController@getWorkflow')->name('api.contract.cases.workflow');//无
+    Route::get('/contract-cases/debug/pending', 'ContractCaseController@debugPendingData')->name('api.contract.cases.debug.pending');//无
 
 // 工作流配置API
 Route::get('/workflows', function(\Illuminate\Http\Request $request) {
@@ -1070,11 +1070,11 @@ Route::get('/test-workflow-config', function(\Illuminate\Http\Request $request) 
     Route::post('/contract-case-records/{id}/file', 'ContractCaseRecordController@file')->name('api.contract.case.records.file');
 
     // 项目处理事项更新管理
-    Route::get('/case-processes/update-list', 'CaseProcessController@getUpdateList')->name('api.case.processes.update.list');
-    Route::get('/case-processes/case/{caseId}/detail', 'CaseProcessController@getCaseDetail')->name('api.case.processes.case.detail');
-    Route::get('/case-processes/case/{caseId}', 'CaseProcessController@getCaseProcesses')->name('api.case.processes.case.processes');
-    Route::post('/case-processes/case/{caseId}/update', 'CaseProcessController@updateCaseProcesses')->name('api.case.processes.case.update');
-    Route::post('/case-processes/batch-update', 'CaseProcessController@batchUpdate')->name('api.case.processes.batch.update');
+    Route::get('/case-processes/update-list', 'CaseProcessController@getUpdateList')->name('api.case.processes.update.list');//获取需要更新处理事项的项目列表
+    Route::get('/case-processes/case/{caseId}/detail', 'CaseProcessController@getCaseDetail')->name('api.case.processes.case.detail');//获取项目处理详情
+    Route::get('/case-processes/case/{caseId}', 'CaseProcessController@getCaseProcesses')->name('api.case.processes.case.processes');//获取项目的处理事项列表
+    Route::post('/case-processes/case/{caseId}/update', 'CaseProcessController@updateCaseProcesses')->name('api.case.processes.case.update');//更新项目的处理事项
+    Route::post('/case-processes/batch-update', 'CaseProcessController@batchUpdate')->name('api.case.processes.batch.update');//批量更新项目处理事项
 
 });
 
@@ -1156,12 +1156,12 @@ Route::post('/upload/invoice', function(\Illuminate\Http\Request $request) {
 
     // 支出单管理（临时移到公开路由用于测试）
     // 注意：具体路径的路由必须放在参数化路由之前，避免路由冲突
-    Route::post('/expenses/batch-destroy', 'Api\ExpenseController@batchDestroy')->name('api.expenses.batch.destroy');
-    Route::get('/expenses', 'Api\ExpenseController@index')->name('api.expenses.index');
-    Route::post('/expenses', 'Api\ExpenseController@store')->name('api.expenses.store');
-    Route::post('/expenses/{id}/submit', 'Api\ExpenseController@submit')->name('api.expenses.submit');
-    Route::post('/expenses/{id}/approve', 'Api\ExpenseController@approve')->name('api.expenses.approve');
-    Route::post('/expenses/{id}/reject', 'Api\ExpenseController@reject')->name('api.expenses.reject');
-    Route::get('/expenses/{id}', 'Api\ExpenseController@show')->name('api.expenses.show');
-    Route::put('/expenses/{id}', 'Api\ExpenseController@update')->name('api.expenses.update');
-    Route::delete('/expenses/{id}', 'Api\ExpenseController@destroy')->name('api.expenses.destroy');
+    Route::post('/expenses/batch-destroy', 'Api\ExpenseController@batchDestroy')->name('api.expenses.batch.destroy');//批量删除支出单
+    Route::get('/expenses', 'Api\ExpenseController@index')->name('api.expenses.index');//获取支出单列表
+    Route::post('/expenses', 'Api\ExpenseController@store')->name('api.expenses.store');//创建支出单
+    Route::post('/expenses/{id}/submit', 'Api\ExpenseController@submit')->name('api.expenses.submit');//提交支出单
+    Route::post('/expenses/{id}/approve', 'Api\ExpenseController@approve')->name('api.expenses.approve');// 审批支出单
+    Route::post('/expenses/{id}/reject', 'Api\ExpenseController@reject')->name('api.expenses.reject');//拒绝支出单
+    Route::get('/expenses/{id}', 'Api\ExpenseController@show')->name('api.expenses.show');//获取支出单详情
+    Route::put('/expenses/{id}', 'Api\ExpenseController@update')->name('api.expenses.update');//更新支出单
+    Route::delete('/expenses/{id}', 'Api\ExpenseController@destroy')->name('api.expenses.destroy');//删除支出单
