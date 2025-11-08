@@ -12,7 +12,47 @@ use Carbon\Carbon;
 class ReviewController extends Controller
 {
     /**
+     * 核稿管理控制器（原版）
+     *
+     * 功能:
+     * - 提供草稿、待开始、审核中、已完成列表查询
+     * - 支持核稿详情、流程流转与退回
+     * - 统一返回结构，包含分页信息
+     *
+     * 路由说明:
+     * - 当前控制器未在 routes/api.php 中直接绑定
+     * - 对外接口使用 ReviewControllerFixed，路径以 `/api/review/*` 暴露
+     * - 本注释用于代码维护与后续路由接入参考
+     *
+     * 内部说明:
+     * - 依赖 `case_processes`、`cases`、`customers`、`users` 等表与关联
+     * - 使用 CaseProcess 的状态常量：STATUS_DRAFT(草稿)、STATUS_ASSIGNED(已分配/待处理)、STATUS_PENDING(待开始)、STATUS_IN_PROGRESS(审核中)、STATUS_COMPLETED(已完成)
+     */
+    /**
      * 获取待提交（草稿）列表
+     *
+     * 接口:
+     * - 暂未绑定路由；替代接口: GET `/api/review/draft-list` (ReviewControllerFixed@getDraftList)
+     *
+     * 请求参数:
+     * - `limit` 分页大小，默认 10
+     * - `page` 当前页，默认 1
+     * - `projectNumber` 项目编号筛选（模糊）
+     * - `caseName` 案件名称筛选（模糊）
+     * - `applicationNo` 申请/注册号筛选（模糊）
+     * - `applicationType` 申请类型筛选（精确）
+     * - `processItem` 处理事项名称筛选（模糊）
+     *
+     * 返回参数:
+     * - `success` 布尔
+     * - `data.list` 列表项（含 `id`、`serialNo`、`projectNumber`、`caseName`、`applicationNo`、`customerName`、`techLead`、`processItem`、`applicationType`、`assignDate`、`internalDeadline`、`officialDeadline`、`customerDeadline`、`processor`、`reviewer`、`statusTime`、`caseNote`、`registrationNo`、`trademarkCategory`、`customerDocNo`）
+     * - `data.total` 总条数
+     * - `data.currentPage` 当前页
+     * - `data.pageSize` 每页条数
+     *
+     * 内部说明:
+     * - 过滤 `process_status = STATUS_DRAFT` 且 `assigned_to` 非空
+     * - 按 `created_at` 倒序，使用 Eloquent 关联映射
      */
     public function getDraftList(Request $request)
     {
@@ -97,6 +137,22 @@ class ReviewController extends Controller
 
     /**
      * 获取待处理列表（草稿已提交，等待分配核稿人）
+     *
+     * 接口:
+     * - 暂未绑定路由；兼容旧接口（建议改用 GET `/api/review/to-be-start-list`）
+     *
+     * 请求参数:
+     * - `limit` 分页大小，默认 10
+     * - `page` 当前页，默认 1
+     *
+     * 返回参数:
+     * - `success` 布尔
+     * - `data.list` 列表项（含 `id`、`serialNo`、`projectNumber`、`caseName`、`applicationNo`、`customerName`、`techLead`、`processItem`、`applicationType`、`assignDate`、`internalDeadline`、`officialDeadline`、`customerDeadline`、`processor`、`reviewer`、`statusTime`）
+     * - `data.total` 总条数、`data.currentPage` 当前页、`data.pageSize` 每页条数
+     *
+     * 内部说明:
+     * - 过滤 `process_status = STATUS_ASSIGNED`，`assigned_to` 非空，`reviewer` 为空
+     * - 用于草稿已提交但尚未指定核稿人的场景
      */
     public function getPendingList(Request $request)
     {
@@ -155,6 +211,22 @@ class ReviewController extends Controller
 
     /**
      * 获取待开始列表（已提交，等待开始核稿）
+     *
+     * 接口:
+     * - 暂未绑定路由；替代接口: GET `/api/review/to-be-start-list` (ReviewControllerFixed@getToBeStartList)
+     *
+     * 请求参数:
+     * - `limit` 分页大小，默认 10
+     * - `page` 当前页，默认 1
+     *
+     * 返回参数:
+     * - `success` 布尔
+     * - `data.list` 列表项（含 `id`、`serialNo`、`projectNumber`、`caseName`、`applicationNo`、`customerName`、`techLead`、`processItem`、`applicationType`、`assignDate`、`internalDeadline`、`officialDeadline`、`customerDeadline`、`processor`、`reviewer`、`statusTime`）
+     * - `data.total`、`data.currentPage`、`data.pageSize`
+     *
+     * 内部说明:
+     * - 使用多表 left join 获取所需显示字段
+     * - 过滤 `process_status = STATUS_PENDING` 且 `assigned_to`、`reviewer` 非空
      */
     public function getToBeStartList(Request $request)
     {
@@ -226,6 +298,21 @@ class ReviewController extends Controller
 
     /**
      * 获取审核中列表（正在进行核稿审核）
+     *
+     * 接口:
+     * - 暂未绑定路由；替代接口: GET `/api/review/in-review-list` (ReviewControllerFixed@getInReviewList)
+     *
+     * 请求参数:
+     * - `limit` 分页大小，默认 10
+     * - `page` 当前页，默认 1
+     *
+     * 返回参数:
+     * - `success` 布尔
+     * - `data.list` 列表项（含 `id`、`serialNo`、`projectNumber`、`caseName`、`applicationNo`、`customerName`、`techLead`、`processItem`、`applicationType`、`assignDate`、`internalDeadline`、`officialDeadline`、`customerDeadline`、`processor`、`reviewer`、`statusTime`）
+     * - `data.total`、`data.currentPage`、`data.pageSize`
+     *
+     * 内部说明:
+     * - 过滤 `process_status = STATUS_IN_PROGRESS` 且 `assigned_to`、`reviewer` 非空
      */
     public function getInReviewList(Request $request)
     {
@@ -284,6 +371,21 @@ class ReviewController extends Controller
 
     /**
      * 获取审核完成列表（核稿审核已完成）
+     *
+     * 接口:
+     * - 暂未绑定路由；替代接口: GET `/api/review/completed-list` (ReviewControllerFixed@getCompletedList)
+     *
+     * 请求参数:
+     * - `limit` 分页大小，默认 10
+     * - `page` 当前页，默认 1
+     *
+     * 返回参数:
+     * - `success` 布尔
+     * - `data.list` 列表项（在常规字段基础上包含 `completionDate` 完成日期）
+     * - `data.total`、`data.currentPage`、`data.pageSize`
+     *
+     * 内部说明:
+     * - 过滤 `process_status = STATUS_COMPLETED`，按 `completion_date` 倒序
      */
     public function getCompletedList(Request $request)
     {
@@ -343,6 +445,19 @@ class ReviewController extends Controller
 
     /**
      * 获取核稿详情
+     *
+     * 接口:
+     * - 暂未绑定路由；替代接口: GET `/api/review/detail/{id}` (ReviewControllerFixed@getReviewDetail)
+     *
+     * 路径参数:
+     * - `id` 处理事项 ID
+     *
+     * 返回参数:
+     * - `success` 布尔
+     * - `data` 对象，包含案件/客户/处理事项详情，如 `caseNumber`、`proposalName`、`clientName`、`caseName`、`applicationType`、`businessStaff`、`applicationNo`、`registrationNo`、`customerDocNo`、`trademarkCategory`、`processItem`、`processor`、`reviewer`、`internalDeadline`、`officialDeadline`、`customerDeadline`、`processStatus`、`statusText`、`caseNotes`、`processDescription`、`createdAt`、`updatedAt`、`completionDate` 等
+     *
+     * 内部说明:
+     * - 通过 Eloquent 关联获取相关信息，如不存在返回 404
      */
     public function getReviewDetail($id)
     {
@@ -402,6 +517,22 @@ class ReviewController extends Controller
 
     /**
      * 流转处理事项
+     *
+     * 接口:
+     * - 暂未绑定路由；替代接口: POST `/api/review/transfer` (ReviewControllerFixed@transferProcess)
+     *
+     * 请求参数:
+     * - `process_id` 处理事项 ID
+     * - `next_status` 下一状态（CaseProcess 状态常量之一）
+     * - `notes` 流转备注，默认空
+     *
+     * 返回参数:
+     * - `success` 布尔
+     * - `message` 文本（如“流转成功”）
+     *
+     * 内部说明:
+     * - 更新 `process_status`、`process_description` 与 `updated_at`
+     * - 若进入 `STATUS_COMPLETED`，记录 `completion_date`
      */
     public function transferProcess(Request $request)
     {
@@ -445,6 +576,20 @@ class ReviewController extends Controller
 
     /**
      * 退回处理事项
+     *
+     * 接口:
+     * - 暂未绑定路由；替代接口: POST `/api/review/return` (ReviewControllerFixed@returnProcess)
+     *
+     * 请求参数:
+     * - `process_id` 处理事项 ID
+     * - `reason` 退回原因，可空
+     *
+     * 返回参数:
+     * - `success` 布尔
+     * - `message` 文本（如“退回成功”）
+     *
+     * 内部说明:
+     * - 将状态置为 `STATUS_DRAFT` 并记录退回原因到 `process_description`
      */
     public function returnProcess(Request $request)
     {

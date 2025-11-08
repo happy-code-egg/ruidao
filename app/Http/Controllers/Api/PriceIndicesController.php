@@ -5,13 +5,73 @@ namespace App\Http\Controllers\Api;
 use App\Models\PriceIndices;
 use Illuminate\Http\Request;
 
+/**
+ * 价格指数（PriceIndices）数据配置控制器
+ *
+ * 功能:
+ * - 提供价格指数的数据维护与查询接口，支持列表筛选、创建/更新校验、选项获取等
+ * - 继承 `BaseDataConfigController` 复用通用的 CRUD、分页、统一返回与异常处理能力
+ *
+ * 路由说明（见 routes/api.php）:
+ * - GET    /api/data-config/price-indices                 => index           获取列表（支持关键字/状态筛选、分页）
+ * - GET    /api/data-config/price-indices/options         => options         获取选项（下拉等，启用状态）
+ * - POST   /api/data-config/price-indices                 => store           创建记录（继承父类方法）
+ * - GET    /api/data-config/price-indices/{id}            => show            获取详情（继承父类方法）
+ * - PUT    /api/data-config/price-indices/{id}            => update          更新记录（继承父类方法）
+ * - DELETE /api/data-config/price-indices/{id}            => destroy         删除记录（继承父类方法）
+ * - POST   /api/data-config/price-indices/batch-status    => batchUpdateStatus 批量启用/禁用（继承父类方法）
+ *
+ * 统一返回:
+ * - 成功使用 `json_success(msg, data)`；失败使用 `json_fail(msg)`，详见 `app/Helpers/json.php`
+ *
+ * 依赖:
+ * - 模型 `App\Models\PriceIndices`
+ * - 父类 `App\Http\Controllers\Api\BaseDataConfigController`
+ *
+ * 异常处理:
+ * - 捕获异常后调用 `log_exception($e, $scene)` 记录错误，返回统一失败响应
+ */
 class PriceIndicesController extends BaseDataConfigController
 {
+    /**
+     * 获取模型类名
+     *
+     * 功能:
+     * - 向父类通用方法提供当前控制器绑定的 Eloquent 模型
+     *
+     * 请求参数: 无
+     * 返回参数: string|class 模型类名（PriceIndices::class）
+     */
     protected function getModelClass()
     {
         return PriceIndices::class;
     }
 
+    /**
+     * 获取验证规则
+     *
+     * 功能:
+     * - 定义创建/更新场景下的字段校验规则，更新时放宽唯一约束
+     *
+     * 路由说明:
+     * - 创建: POST `/api/data-config/price-indices`
+     * - 更新: PUT  `/api/data-config/price-indices/{id}`
+     *
+     * 字段规则示例:
+     * - name: 必填、字符串、最长100
+     * - code: 可空、字符串、最长50、唯一（更新时排除当前记录）
+     * - index_name: 必填、字符串、最长200
+     * - description: 可空、字符串
+     * - base_value/current_value: 可空、数值
+     * - status: 必填、枚举 0|1
+     * - sort_order: 可空、整数、最小值0
+     *
+     * 返回参数:
+     * - array 验证规则数组
+     *
+     * 内部说明:
+     * - `$isUpdate=true` 时，通过路由参数 `{id}` 排除唯一约束；新增场景直接唯一
+     */
     protected function getValidationRules($isUpdate = false)
     {
         $rules = [
@@ -35,6 +95,18 @@ class PriceIndicesController extends BaseDataConfigController
         return $rules;
     }
 
+    /**
+     * 获取验证提示文案
+     *
+     * 功能:
+     * - 在父类基础上补充或覆盖特定字段的提示信息
+     *
+     * 返回参数:
+     * - array 提示文案数组，如 `name.required => 价格指数名称不能为空`
+     *
+     * 内部说明:
+     * - 使用 `array_merge` 合并父类默认提示与当前控制器的自定义提示
+     */
     protected function getValidationMessages()
     {
         return array_merge(parent::getValidationMessages(), [
@@ -43,7 +115,27 @@ class PriceIndicesController extends BaseDataConfigController
     }
 
     /**
-     * 重写 index 支持 index_level 筛选
+     * 列表查询（分页 + 关键字/状态筛选）
+     *
+     * 功能:
+     * - 重写列表获取逻辑，支持对 `name/code/description/index_name` 的模糊搜索
+     * - 支持状态筛选与分页，按 `sort_order`、`id` 排序
+     *
+     * 路由说明:
+     * - GET `/api/data-config/price-indices`
+     *
+     * 请求参数:
+     * - keyword: 关键字，匹配 `name/code/description/index_name`
+     * - status: 状态筛选，0/1
+     * - page: 页码，默认 1，最小 1
+     * - limit: 每页条数，默认 15，范围 1-100
+     *
+     * 返回参数:
+     * - list: 数组，每条包含 `id/name/code/index_name/description/base_value/current_value/status/status_text/sort_order/created_at/updated_at/created_by/updated_by`
+     * - total/page/limit/pages: 分页元信息
+     *
+     * 异常处理:
+     * - 捕获异常记录日志 `log_exception`，返回统一失败信息
      */
     public function index(Request $request)
     {
@@ -108,7 +200,19 @@ class PriceIndicesController extends BaseDataConfigController
     }
 
     /**
-     * 获取选项列表（用于下拉框等）
+     * 获取选项列表（启用状态，下拉等场景）
+     *
+     * 功能:
+     * - 返回启用状态的价格指数选项，字段为 `value=id`、`label=index_name`
+     *
+     * 路由说明:
+     * - GET `/api/data-config/price-indices/options`
+     *
+     * 返回参数:
+     * - 数组: `[{ value, label }]`
+     *
+     * 异常处理:
+     * - 捕获异常返回统一失败信息
      */
     public function options(\Illuminate\Http\Request $request)
     {

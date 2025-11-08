@@ -12,10 +12,40 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
+/**
+ * 个人案件控制器
+ * 
+ * 说明：
+ * - 提供个人案件的查询、流程维护与导出接口
+ * - 包含待处理/已完成（商标/专利/版权/科技服务）、部门项目、流程时间与备注维护、流程节点启动、跟进添加及数据导出
+ * 
+ * 路由前缀：/personal-cases（具体绑定请参考 routes/api.php）
+ */
 class PersonalCaseController extends Controller
 {
     /**
      * 获取个人项目首页数据
+     * 
+     * 功能说明：
+     * - 返回当前用户的案件概览，包含最新流程信息
+     * - 支持案件类型与流程相关筛选，并分页
+     * 
+     * 请求参数：
+     * - case_type：字符串，案件类型（专利/商标/版权/科服），默认专利
+     * - internal_deadline：日期或字符串，可选，内部截止日期筛选
+     * - official_deadline：日期或字符串，可选，官方截止日期筛选
+     * - process_status：字符串或整数，可选，流程状态筛选
+     * - process_item：字符串，可选，流程事项筛选
+     * - page：整数，页码，默认1
+     * - limit：整数，每页条数，默认10
+     * 
+     * 返回：JSON
+     * - success：布尔
+     * - data.mock_data.tableData：列表数据（案件与流程简要信息）
+     * - data.mock_data.total：总数
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
@@ -96,7 +126,26 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 获取待处理项目列表（商标专利版权）
+     * 获取待处理项目列表（商标/专利/版权）
+     * 
+     * 功能说明：
+     * - 仅返回当前用户创建的未结案项目（排除已完成/已授权/已归档）
+     * - 限制案件类型为商标、专利、版权
+     * - 支持流程状态/事项筛选与分页
+     * 
+     * 请求参数：
+     * - case_type：字符串，枚举：专利/商标/版权（默认：专利）
+     * - internal_deadline：日期或字符串，可选
+     * - official_deadline：日期或字符串，可选
+     * - process_status：字符串或整数，可选
+     * - process_items：字符串或数组，可选
+     * - page：整数，默认1
+     * - limit：整数，默认10
+     * 
+     * 返回：JSON（列表与分页信息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function pending(Request $request)
     {
@@ -209,6 +258,21 @@ class PersonalCaseController extends Controller
 
     /**
      * 获取待处理项目列表（科技服务）
+     * 
+     * 功能说明：
+     * - 返回当前用户创建的科技服务类未结案项目
+     * - 支持文号、客户、批次、申请/业务类型、年份、区域、状态等条件筛选
+     * - 支持分页
+     * 
+     * 请求参数：
+     * - our_ref_number、customer_name、application_batch、application_type、business_type
+     * - project_year、management_area、case_status
+     * - page（默认1）、limit（默认10）
+     * 
+     * 返回：JSON（列表与分页信息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function pendingProject(Request $request)
     {
@@ -321,7 +385,22 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 获取已完成项目列表（商标专利版权）
+     * 获取已完成项目列表（商标/专利/版权）
+     * 
+     * 功能说明：
+     * - 返回当前用户创建的已完成/已授权/已归档项目
+     * - 限制案件类型为商标、专利、版权
+     * - 支持流程筛选与完成时间范围筛选（start_date、end_date）
+     * - 支持分页
+     * 
+     * 请求参数：
+     * - case_type、internal_deadline、official_deadline、process_status、process_items
+     * - start_date、end_date、page（默认1）、limit（默认10）
+     * 
+     * 返回：JSON（列表与分页信息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function completed(Request $request)
     {
@@ -446,6 +525,21 @@ class PersonalCaseController extends Controller
 
     /**
      * 获取已完成项目列表（科技服务）
+     * 
+     * 功能说明：
+     * - 返回当前用户处理完成的科技服务项目（依据流程状态为已完成）
+     * - 支持多条件筛选与完成时间范围过滤
+     * - 支持分页
+     * 
+     * 请求参数：
+     * - our_ref_number、customer_name、application_batch、application_type、business_type
+     * - project_year、management_area、case_status、start_date、end_date
+     * - page（默认1）、limit（默认10）
+     * 
+     * 返回：JSON（列表与分页信息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function completedProject(Request $request)
     {
@@ -574,6 +668,20 @@ class PersonalCaseController extends Controller
 
     /**
      * 获取部门项目列表
+     * 
+     * 功能说明：
+     * - 返回同部门业务人员负责的项目（通过业务人员部门匹配）
+     * - 支持案件类型、申请类型、状态、客户/申请人、部门、处理事项类型与状态、业务类型等过滤
+     * - 支持分页
+     * 
+     * 请求参数：
+     * - case_type、application_type、case_status、customer_name、applicant、department
+     * - process_item_type、process_item、item_status、business_type、page、limit
+     * 
+     * 返回：JSON（列表与分页信息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function department(Request $request)
     {
@@ -692,7 +800,21 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 修改预计完成时间
+     * 修改预计完成时间（批量）
+     * 
+     * 功能说明：
+     * - 为当前用户负责且未完成的项目批量设置预计完成日期
+     * - 同时可写入处理备注
+     * 
+     * 请求参数验证：
+     * - case_ids：必填，整数数组，需存在于 cases 表
+     * - selected_date：必填，日期
+     * - remark：可选，字符串，最大500字符
+     * 
+     * 返回：JSON（成功/失败消息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function modifyEstimatedTime(Request $request)
     {
@@ -741,7 +863,22 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 添加完成
+     * 批量标记完成
+     * 
+     * 功能说明：
+     * - 将当前用户负责的处理事项批量更新为已完成状态
+     * - 写入完成日期与备注
+     * 
+     * 请求参数验证：
+     * - case_ids：必填，整数数组，需存在于 cases 表
+     * - selected_date：必填，日期（完成日期）
+     * - process_status：必填，字符串（前端状态文本，实际存储为内部常量）
+     * - remark：可选，字符串，最大500字符
+     * 
+     * 返回：JSON（更新数量与成功消息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function addComplete(Request $request)
     {
@@ -793,7 +930,19 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 添加处理事项备注
+     * 批量添加处理备注
+     * 
+     * 功能说明：
+     * - 为当前用户负责的处理事项批量写入备注
+     * 
+     * 请求参数验证：
+     * - case_ids：必填，整数数组，需存在于 cases 表
+     * - remark：必填，字符串，最大1000字符
+     * 
+     * 返回：JSON（更新数量与成功消息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function addProcessNote(Request $request)
     {
@@ -838,7 +987,18 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 启动递交
+     * 启动“递交申请”流程节点（批量）
+     * 
+     * 功能说明：
+     * - 将当前用户负责的处理事项状态置为“处理中”，并设置处理事项为“递交申请”
+     * 
+     * 请求参数验证：
+     * - case_ids：必填，整数数组，需存在于 cases 表
+     * 
+     * 返回：JSON（成功/失败消息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function startDraft(Request $request)
     {
@@ -889,7 +1049,18 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 启动核稿
+     * 启动“核稿审查”流程节点（批量）
+     * 
+     * 功能说明：
+     * - 将当前用户负责的处理事项状态置为“处理中”，并设置处理事项为“核稿审查”
+     * 
+     * 请求参数验证：
+     * - case_ids：必填，整数数组，需存在于 cases 表
+     * 
+     * 返回：JSON（成功/失败消息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function startSupplement(Request $request)
     {
@@ -940,7 +1111,22 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 新增流程跟进
+     * 添加后续跟进事项（批量）
+     * 
+     * 功能说明：
+     * - 为指定案件创建新的处理事项（待处理），并设置期望日期与备注
+     * - 处理事项默认分配给当前用户
+     * 
+     * 请求参数验证：
+     * - case_ids：必填，整数数组，需存在于 cases 表
+     * - process_item：必填，字符串，处理事项名称
+     * - remark：可选，字符串
+     * - expected_date：可选，日期
+     * 
+     * 返回：JSON（创建数量与成功消息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function addProcessFollow(Request $request)
     {
@@ -997,6 +1183,18 @@ class PersonalCaseController extends Controller
 
     /**
      * 添加收文日期
+     * 
+     * 功能说明：
+     * - 为选中的案件批量设置收文日期
+     * 
+     * 请求参数验证：
+     * - case_ids：必填，整数数组，需存在于 cases 表
+     * - received_date：必填，日期
+     * 
+     * 返回：JSON（更新数量与成功消息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function addReceivedTime(Request $request)
     {
@@ -1039,6 +1237,18 @@ class PersonalCaseController extends Controller
 
     /**
      * 添加办结日期
+     * 
+     * 功能说明：
+     * - 为选中的案件批量设置办结日期
+     * 
+     * 请求参数验证：
+     * - case_ids：必填，整数数组，需存在于 cases 表
+     * - deadline_date：必填，日期
+     * 
+     * 返回：JSON（更新数量与成功消息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function addDeadline(Request $request)
     {
@@ -1081,6 +1291,18 @@ class PersonalCaseController extends Controller
 
     /**
      * 添加备注
+     * 
+     * 功能说明：
+     * - 为选中的案件批量写入备注
+     * 
+     * 请求参数验证：
+     * - case_ids：必填，整数数组，需存在于 cases 表
+     * - remark：必填，字符串，最大1000字符
+     * 
+     * 返回：JSON（更新数量与成功消息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function addRemark(Request $request)
     {
@@ -1123,6 +1345,23 @@ class PersonalCaseController extends Controller
 
     /**
      * 导出数据
+     * 
+     * 功能说明：
+     * - 根据导出类型生成 CSV 响应（UTF-8 BOM），供前端下载
+     * - 支持导出：已完成科技服务项目（completed_project）、部门客户项目（department_cases）
+     * 
+     * 请求参数：
+     * - type：字符串，导出类型（completed_project/department_cases）
+     * - search_params：数组，可选，查询条件（当前实现主要使用 selected_ids）
+     * - selected_ids：数组，必需，选中的案件ID列表
+     * - visible_columns：数组，可选，导出列配置（用于部门客户项目导出）
+     * 
+     * 返回：
+     * - 成功：CSV 文件响应
+     * - 失败：JSON 错误信息（包含 content-type）
+     * 
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\JsonResponse
      */
     public function export(Request $request)
     {
@@ -1155,7 +1394,13 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 导出已完成科技服务项目
+     * 导出已完成科技服务项目（内部方法）
+     * 
+     * 参数：
+     * - searchParams：数组，查询条件（当前实现未全面使用）
+     * - selectedIds：数组，选中的案件ID
+     * 
+     * 返回：CSV 文件响应
      */
     private function exportCompletedProject($searchParams, $selectedIds)
     {
@@ -1191,7 +1436,14 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 导出部门客户项目
+     * 导出部门客户项目（内部方法）
+     * 
+     * 参数：
+     * - searchParams：数组，查询条件（当前实现未全面使用）
+     * - selectedIds：数组，选中的案件ID
+     * - visibleColumns：数组，导出列可见性配置
+     * 
+     * 返回：CSV 文件响应
      */
     private function exportDepartmentCases($searchParams, $selectedIds, $visibleColumns)
     {
@@ -1238,7 +1490,17 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 生成Excel响应
+     * 生成导出响应（CSV）
+     * 
+     * 说明：
+     * - 使用内存临时流生成 CSV，并写入 UTF-8 BOM 以支持中文
+     * - 当数据非空时，首行输出表头（数组键）
+     * 
+     * 参数：
+     * - data：数组，导出数据行（关联数组）
+     * - filename：字符串，文件名前缀
+     * 
+     * 返回：CSV 文件响应
      */
     private function generateExcelResponse($data, $filename)
     {
@@ -1272,6 +1534,21 @@ class PersonalCaseController extends Controller
 
     /**
      * 修改处理事项
+     * 
+     * 功能说明：
+     * - 根据 item_id 更新处理事项（CaseProcess）的多个字段
+     * - 支持更新：预计开始/完成日期、完成点数、累计完成点数、完成率、累计完成率、部分完成日期、完成日期、流程状态
+     * 
+     * 请求参数：
+     * - item_id：必填，整数，处理事项ID
+     * - expected_start_date、expected_finish_date、partial_complete_date、complete_date：日期，可选
+     * - completed_points、total_completed_points、completion_rate、total_completion_rate：整数/数值，可选
+     * - process_status：整数/字符串，可选
+     * 
+     * 返回：JSON（成功消息与更新后的处理事项数据；失败返回错误信息）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function modifyProcessItem(Request $request)
     {
@@ -1325,7 +1602,12 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 获取案例状态文本
+     * 获取案例状态文本（内部方法）
+     * 
+     * 参数：
+     * - status：整数，案例状态常量
+     * 
+     * 返回：字符串（中文状态文本）
      */
     private function getCaseStatusText($status)
     {
@@ -1344,7 +1626,12 @@ class PersonalCaseController extends Controller
     }
 
     /**
-     * 获取处理状态文本
+     * 获取处理状态文本（内部方法）
+     * 
+     * 参数：
+     * - status：整数，处理事项状态常量
+     * 
+     * 返回：字符串（中文状态文本）
      */
     private function getProcessStatusText($status)
     {

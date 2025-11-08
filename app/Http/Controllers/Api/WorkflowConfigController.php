@@ -14,11 +14,23 @@ use Illuminate\Support\Facades\Auth;
 class WorkflowConfigController extends Controller
 {
     /**
-     * 获取流程配置列表
+     * 功能: 获取流程配置列表，支持分页、名称/代码/项目类型/状态筛选
+     * 请求参数:
+     * - page(int, 可选): 页码，默认1
+     * - limit(int, 可选): 每页数量，默认10，最大100
+     * - name(string, 可选): 名称模糊搜索
+     * - code(string, 可选): 代码模糊搜索
+     * - caseType(string, 可选): 项目类型过滤
+     * - isValid(bool|string|int, 可选): 状态筛选，支持 true/'true'/1
+     * 返回参数:
+     * - JSON: {code, msg, data, count, page, limit}
+     * - data(array): 格式化后的流程配置列表
+     * 接口: GET /workflow-config/list
      */
     public function getList(Request $request)
     {
         try {
+            // 步骤说明：解析参数 -> 构建查询 -> 应用筛选 -> 统计总数 -> 分页查询 -> 格式化输出
             $page = max(1, (int)$request->get('page', 1));
             $limit = max(1, min(100, (int)$request->get('limit', 10)));
             $name = $request->get('name', '');
@@ -95,11 +107,18 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 获取流程配置详情
+     * 功能: 获取指定流程配置详情
+     * 请求参数:
+     * - id(int, 必填): 路径参数，流程配置ID
+     * 返回参数:
+     * - JSON: {code, msg, data}
+     * - data(object|null): 流程配置详情
+     * 接口: GET /workflow-config/{id}
      */
     public function getDetail($id)
     {
         try {
+            // 步骤说明：查找配置 -> 格式化关键字段 -> 返回详情
             $workflow = Workflow::find($id);
             
             if (!$workflow) {
@@ -140,11 +159,23 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 更新流程配置
+     * 功能: 更新流程配置（名称/代码/描述/类型/状态/节点）
+     * 请求参数:
+     * - id(int, 必填): 路径参数，流程配置ID
+     * - name(string, 可选): 名称
+     * - code(string, 可选): 代码
+     * - description(string, 可选): 描述
+     * - caseType(string, 可选): 项目类型显示值（内部将解析为代码）
+     * - isValid(boolean, 可选): 是否启用
+     * - nodes(array, 可选): 节点配置数组
+     * 返回参数:
+     * - JSON: {code, msg}
+     * 接口: PUT /workflow-config/{id}
      */
     public function update(Request $request, $id)
     {
         try {
+            // 步骤说明：查找配置 -> 参数校验 -> 事务更新基本信息与节点 -> 保存并提交
             $workflow = Workflow::find($id);
             
             if (!$workflow) {
@@ -218,11 +249,17 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 获取可分配的用户列表（按部门分组）
+     * 功能: 获取可分配的用户列表（按部门分组）
+     * 请求参数: 无
+     * 返回参数:
+     * - JSON: {code, msg, data}
+     * - data(array): [{label: 部门名, options: [{label: 用户名(职位), value: 用户ID}]}]
+     * 接口: GET /workflow-config/assignable-users
      */
     public function getAssignableUsers()
     {
         try {
+            // 步骤说明：联表查询部门与启用用户 -> 构建分组下拉 -> 无分组时回退为“所有用户”组
             $departments = Department::with(['users' => function($query) {
                 $query->where('status', 1)
                       ->select('id', 'real_name', 'department_id', 'position');
@@ -284,7 +321,12 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 获取项目类型列表
+     * 功能: 获取项目类型列表
+     * 请求参数: 无
+     * 返回参数:
+     * - JSON: {code, msg, data}
+     * - data(array): [{label, value}]
+     * 接口: GET /workflow-config/case-types
      */
     public function getCaseTypes()
     {
@@ -316,11 +358,18 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 批量更新流程配置
+     * 功能: 批量启用/禁用流程配置
+     * 请求参数:
+     * - ids(array<int>, 必填): 配置ID列表
+     * - action(string, 必填): 操作类型，支持 enable/disable
+     * 返回参数:
+     * - JSON: {code, msg}
+     * 接口: POST /workflow-config/batch-update
      */
     public function batchUpdate(Request $request)
     {
         try {
+            // 步骤说明：校验参数 -> 计算目标状态 -> 批量更新 -> 返回更新统计
             $validator = Validator::make($request->all(), [
                 'ids' => 'required|array',
                 'ids.*' => 'integer|exists:workflows,id',
@@ -356,11 +405,18 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 验证流程配置
+     * 功能: 验证流程配置节点的完整性与合理性
+     * 请求参数:
+     * - id(int, 必填): 路径参数，流程配置ID
+     * 返回参数:
+     * - JSON: {code, msg, data}
+     * - data: {valid(bool), errors(array<string>)}
+     * 接口: POST /workflow-config/{id}/validate
      */
     public function validateWorkflow($id)
     {
         try {
+            // 步骤说明：查找配置 -> 校验节点数组存在 -> 遍历各节点检查必需处理人与时限 -> 汇总错误并返回
             $workflow = Workflow::find($id);
             
             if (!$workflow) {
@@ -422,7 +478,12 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 格式化项目类型显示
+     * 功能: 将内部类型代码映射为显示名称
+     * 请求参数:
+     * - caseType(string): 类型代码
+     * 返回参数:
+     * - string: 显示名称
+     * 接口: 无接口（内部工具方法）
      */
     private function formatCaseType($caseType)
     {
@@ -446,7 +507,12 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 解析项目类型
+     * 功能: 将显示名称解析为内部类型代码
+     * 请求参数:
+     * - displayType(string): 显示名称
+     * 返回参数:
+     * - string: 类型代码
+     * 接口: 无接口（内部工具方法）
      */
     private function parseCaseType($displayType)
     {
@@ -465,7 +531,12 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 格式化节点数据
+     * 功能: 将数据库节点结构格式化为前端友好结构
+     * 请求参数:
+     * - nodes(array|mixed): 节点原始结构
+     * 返回参数:
+     * - array: 规范化节点数组 [{id,name,type,required,assignee,timeLimit,description,auto_pass,sort_order}]
+     * 接口: 无接口（内部工具方法）
      */
     private function formatNodes($nodes)
     {
@@ -489,7 +560,12 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 处理节点数据
+     * 功能: 将前端提交的节点数据转换为数据库存储结构
+     * 请求参数:
+     * - nodes(array): 前端节点数组
+     * 返回参数:
+     * - array: 存储结构节点数组 [{id,name,type,auto_pass,assignee_users,sort_order}]
+     * 接口: 无接口（内部工具方法）
      */
     private function processNodes($nodes)
     {
@@ -506,11 +582,17 @@ class WorkflowConfigController extends Controller
     }
 
     /**
-     * 重置流程配置到默认状态
+     * 功能: 将流程配置重置为默认的8节点结构（首尾自动通过）
+     * 请求参数:
+     * - id(int, 必填): 路径参数，流程配置ID
+     * 返回参数:
+     * - JSON: {code, msg}
+     * 接口: POST /workflow-config/{id}/reset
      */
     public function resetToDefault($id)
     {
         try {
+            // 步骤说明：查找配置 -> 构建默认8节点 -> 写入并启用 -> 保存
             $workflow = Workflow::find($id);
             
             if (!$workflow) {

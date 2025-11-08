@@ -11,10 +11,36 @@ use App\Exports\TrademarkSearchExport;
 use App\Exports\CopyrightSearchExport;
 use App\Exports\ProjectSearchExport;
 
+/**
+ * 功能: 查询模块控制器，集中提供专利、商标、版权、科服的列表查询、导出与详情接口，
+ *       以及前端筛选所需的辅助数据（人员、地区、机构、部门、国家）。
+ * 路由前缀: /api/search
+ * 说明: 仅补充注释，不改动任何业务逻辑或日志。
+ */
 class SearchController extends Controller
 {
     /**
-     * 专利查询
+     * 功能: 专利综合查询，支持多条件筛选与分页。
+     * 接口: GET /api/search/patents (route: api.search.patents)
+     * 请求参数:
+     * - page int 当前页，默认 1
+     * - page_size int 每页条数，默认 10
+     * - ourRefNumber string 我方案号，模糊匹配
+     * - appNumber string 申请号，模糊匹配
+     * - customerName string 客户名称，模糊匹配
+     * - caseName string 项目名称，模糊匹配
+     * - applicationType string|int 申请类型，精确匹配
+     * - caseStatus string|int 项目状态，精确匹配
+     * - appDateRange array [开始日期, 结束日期]，格式 YYYY-MM-DD
+     * - businessPerson string 业务人员姓名，模糊匹配
+     * - appCountry string 国家/地区代码，精确匹配
+     * 返回参数:
+     * - success bool
+     * - data.object 列表和分页信息：data, total, current_page, per_page, last_page
+     * 内部说明:
+     * - 关联 cases/customers/users 表字段，选择常用显示列
+     * - 调用 applyPatentFilters 应用筛选条件
+     * - 使用 count/offset/limit 分页
      */
     public function searchPatents(Request $request)
     {
@@ -86,7 +112,27 @@ class SearchController extends Controller
     }
 
     /**
-     * 商标查询
+     * 功能: 商标综合查询，支持多条件筛选与分页。
+     * 接口: GET /api/search/trademarks (route: api.search.trademarks)
+     * 请求参数:
+     * - page int 当前页，默认 1
+     * - page_size int 每页条数，默认 10
+     * - ourRefNumber string 我方案号，模糊匹配
+     * - regNumber string 注册号，模糊匹配
+     * - appNumber string 申请号，模糊匹配
+     * - customerName string 客户名称，模糊匹配
+     * - trademarkName string 商标名称，模糊匹配
+     * - trademarkClass string|int 商标类别，精确匹配
+     * - caseStatus string|int 项目状态，精确匹配
+     * - appDateRange array [开始日期, 结束日期]，格式 YYYY-MM-DD
+     * - businessPerson string 业务人员姓名，模糊匹配
+     * 返回参数:
+     * - success bool
+     * - data.object 列表和分页信息：data, total, current_page, per_page, last_page
+     * 内部说明:
+     * - 关联 cases/customers/users 表字段
+     * - 调用 applyTrademarkFilters 应用筛选条件
+     * - 使用 count/offset/limit 分页
      */
     public function searchTrademarks(Request $request)
     {
@@ -152,7 +198,26 @@ class SearchController extends Controller
     }
 
     /**
-     * 版权查询
+     * 功能: 版权综合查询，支持多条件筛选与分页。
+     * 接口: GET /api/search/copyrights (route: api.search.copyrights)
+     * 请求参数:
+     * - page int 当前页，默认 1
+     * - page_size int 每页条数，默认 10
+     * - ourRefNumber string 我方案号，模糊匹配
+     * - regNumber string 登记号，模糊匹配
+     * - workName string 作品名称，模糊匹配
+     * - customerName string 客户名称，模糊匹配
+     * - workType string|int 作品类型，精确匹配
+     * - caseStatus string|int 项目状态，精确匹配
+     * - appDateRange array [开始日期, 结束日期]，格式 YYYY-MM-DD
+     * - businessPerson string 业务人员姓名，模糊匹配
+     * 返回参数:
+     * - success bool
+     * - data.object 列表和分页信息：data, total, current_page, per_page, last_page
+     * 内部说明:
+     * - 关联 cases/customers/users 表字段
+     * - 调用 applyCopyrightFilters 应用筛选
+     * - 使用 count/offset/limit 分页
      */
     public function searchCopyrights(Request $request)
     {
@@ -216,7 +281,26 @@ class SearchController extends Controller
     }
 
     /**
-     * 科服查询
+     * 功能: 科技服务项目综合查询，支持多条件筛选与分页。
+     * 接口: GET /api/search/projects (route: api.search.projects)
+     * 请求参数:
+     * - page int 当前页，默认 1
+     * - page_size int 每页条数，默认 10
+     * - projectNumber string 项目编号，模糊匹配
+     * - applyStage string|int 申报阶段，精确匹配；传 '__empty__' 代表过滤空值
+     * - applyResult string|int 申报结果，精确匹配；传 '__empty__' 代表过滤空值
+     * - customerName string 客户名称，模糊匹配
+     * - businessType string|int 业务类型，精确匹配
+     * - applicationType string|int 申请类型，精确匹配
+     * - techServiceName string 科服项目名称，模糊匹配
+     * - businessPerson string 业务人员姓名；传 '__empty__' 时匹配业务人员为空
+     * 返回参数:
+     * - success bool
+     * - data.object 列表和分页信息：data, total, current_page, per_page, last_page
+     * 内部说明:
+     * - 关联 cases/customers/users 表字段
+     * - 调用 applyProjectFilters 应用筛选，包含空值特殊处理
+     * - 使用 count/offset/limit 分页
      */
     public function searchProjects(Request $request)
     {
@@ -284,7 +368,10 @@ class SearchController extends Controller
     }
 
     /**
-     * 专利查询导出
+     * 功能: 导出专利查询结果为 Excel 文件。
+     * 接口: POST /api/search/patents/export (route: api.search.patents.export)
+     * 请求参数: 与 GET /api/search/patents 相同，作为导出筛选条件。
+     * 返回参数: 直接触发文件下载，文件名形如 "专利查询_YYYYMMDDHHMMSS.xlsx"。
      */
     public function exportPatents(Request $request)
     {
@@ -299,7 +386,10 @@ class SearchController extends Controller
     }
 
     /**
-     * 商标查询导出
+     * 功能: 导出商标查询结果为 Excel 文件。
+     * 接口: POST /api/search/trademarks/export (route: api.search.trademarks.export)
+     * 请求参数: 与 GET /api/search/trademarks 相同，作为导出筛选条件。
+     * 返回参数: 直接触发文件下载，文件名形如 "商标查询_YYYYMMDDHHMMSS.xlsx"。
      */
     public function exportTrademarks(Request $request)
     {
@@ -314,7 +404,10 @@ class SearchController extends Controller
     }
 
     /**
-     * 版权查询导出
+     * 功能: 导出版权查询结果为 Excel 文件。
+     * 接口: POST /api/search/copyrights/export (route: api.search.copyrights.export)
+     * 请求参数: 与 GET /api/search/copyrights 相同，作为导出筛选条件。
+     * 返回参数: 直接触发文件下载，文件名形如 "版权查询_YYYYMMDDHHMMSS.xlsx"。
      */
     public function exportCopyrights(Request $request)
     {
@@ -329,7 +422,10 @@ class SearchController extends Controller
     }
 
     /**
-     * 科服查询导出
+     * 功能: 导出科服查询结果为 Excel 文件。
+     * 接口: POST /api/search/projects/export (route: api.search.projects.export)
+     * 请求参数: 与 GET /api/search/projects 相同，作为导出筛选条件。
+     * 返回参数: 直接触发文件下载，文件名形如 "科服查询_YYYYMMDDHHMMSS.xlsx"。
      */
     public function exportProjects(Request $request)
     {
@@ -344,7 +440,13 @@ class SearchController extends Controller
     }
 
     /**
-     * 获取专利详情
+     * 功能: 获取单个专利项目详情。
+     * 接口: GET /api/search/patents/{id}/detail (route: api.search.patents.detail)
+     * 请求参数:
+     * - id int 路径参数，项目ID
+     * 返回参数:
+     * - success bool
+     * - data.object 项目完整详情；未找到返回 404。
      */
     public function getPatentDetail($id)
     {
@@ -386,7 +488,13 @@ class SearchController extends Controller
     }
 
     /**
-     * 获取商标详情
+     * 功能: 获取单个商标项目详情。
+     * 接口: GET /api/search/trademarks/{id}/detail (route: api.search.trademarks.detail)
+     * 请求参数:
+     * - id int 路径参数，项目ID
+     * 返回参数:
+     * - success bool
+     * - data.object 项目完整详情；未找到返回 404。
      */
     public function getTrademarkDetail($id)
     {
@@ -426,7 +534,13 @@ class SearchController extends Controller
     }
 
     /**
-     * 获取版权详情
+     * 功能: 获取单个版权项目详情。
+     * 接口: GET /api/search/copyrights/{id}/detail (route: api.search.copyrights.detail)
+     * 请求参数:
+     * - id int 路径参数，项目ID
+     * 返回参数:
+     * - success bool
+     * - data.object 项目完整详情；未找到返回 404。
      */
     public function getCopyrightDetail($id)
     {
@@ -466,7 +580,13 @@ class SearchController extends Controller
     }
 
     /**
-     * 获取科服详情
+     * 功能: 获取单个科技服务项目详情。
+     * 接口: GET /api/search/projects/{id}/detail (route: api.search.projects.detail)
+     * 请求参数:
+     * - id int 路径参数，项目ID
+     * 返回参数:
+     * - success bool
+     * - data.object 项目完整详情；未找到返回 404。
      */
     public function getProjectDetail($id)
     {
@@ -508,7 +628,12 @@ class SearchController extends Controller
     }
 
     /**
-     * 应用专利查询过滤条件
+     * 功能: 将专利查询的请求参数转换为 SQL 过滤条件。
+     * 调用方: searchPatents
+     * 请求参数支持:
+     * - ourRefNumber, appNumber, customerName, caseName, applicationType,
+     *   caseStatus, appDateRange([开始,结束]), businessPerson, appCountry。
+     * 内部说明: 模糊匹配使用 like；日期范围使用 whereBetween。
      */
     private function applyPatentFilters($query, $request)
     {
@@ -550,7 +675,11 @@ class SearchController extends Controller
     }
 
     /**
-     * 应用商标查询过滤条件
+     * 功能: 将商标查询的请求参数转换为 SQL 过滤条件。
+     * 调用方: searchTrademarks
+     * 请求参数支持:
+     * - ourRefNumber, regNumber, appNumber, customerName, trademarkName,
+     *   trademarkClass, caseStatus, appDateRange([开始,结束]), businessPerson。
      */
     private function applyTrademarkFilters($query, $request)
     {
@@ -592,7 +721,11 @@ class SearchController extends Controller
     }
 
     /**
-     * 应用版权查询过滤条件
+     * 功能: 将版权查询的请求参数转换为 SQL 过滤条件。
+     * 调用方: searchCopyrights
+     * 请求参数支持:
+     * - ourRefNumber, regNumber, workName, customerName, workType,
+     *   caseStatus, appDateRange([开始,结束]), businessPerson。
      */
     private function applyCopyrightFilters($query, $request)
     {
@@ -630,8 +763,13 @@ class SearchController extends Controller
     }
 
     /**
-     * 应用科服查询过滤条件
-     */
+      * 功能: 将科服查询的请求参数转换为 SQL 过滤条件，处理空值特殊标识。
+      * 调用方: searchProjects
+      * 请求参数支持:
+      * - projectNumber, applyStage('__empty__' 表示匹配空值), applyResult('__empty__'),
+      *   customerName, businessType, applicationType, techServiceName,
+      *   businessPerson('__empty__' 表示业务人员为空)。
+      */
     private function applyProjectFilters($query, $request)
     {
         if ($request->filled('projectNumber')) {
@@ -680,7 +818,9 @@ class SearchController extends Controller
     }
 
     /**
-     * 获取业务人员列表
+     * 功能: 获取业务人员列表（供前端筛选使用）。
+     * 接口: GET /api/search/business-persons (route: api.search.business.persons)
+     * 返回参数: success, data[ {id, name} ]。
      */
     public function getBusinessPersons()
     {
@@ -697,18 +837,30 @@ class SearchController extends Controller
     }
 
     /**
-     * 获取其他辅助数据的方法...
+     * 功能: 获取案件处理人列表。
+     * 接口: GET /api/search/case-handlers (route: api.search.case.handlers)
+     * 返回参数: success, data[ {id, name} ]；复用业务人员数据。
      */
     public function getCaseHandlers()
     {
         return $this->getBusinessPersons(); // 复用业务人员数据
     }
 
+    /**
+     * 功能: 获取技术主导列表。
+     * 接口: GET /api/search/tech-leaders (route: api.search.tech.leaders)
+     * 返回参数: success, data[ {id, name} ]；复用业务人员数据。
+     */
     public function getTechLeaders()
     {
         return $this->getBusinessPersons(); // 复用业务人员数据
     }
 
+    /**
+     * 功能: 获取地区树结构（示例数据）。
+     * 接口: GET /api/search/regions (route: api.search.regions)
+     * 返回参数: success, data 为省-市-区层级结构。
+     */
     public function getRegions()
     {
         return response()->json([
@@ -721,6 +873,11 @@ class SearchController extends Controller
         ]);
     }
 
+    /**
+     * 功能: 获取代理机构列表。
+     * 接口: GET /api/search/agencies (route: api.search.agencies)
+     * 返回参数: success, data[ {id, name} ]。
+     */
     public function getAgencies()
     {
         $agencies = DB::table('agencies')
@@ -734,6 +891,11 @@ class SearchController extends Controller
         ]);
     }
 
+    /**
+     * 功能: 获取部门列表。
+     * 接口: GET /api/search/departments (route: api.search.departments)
+     * 返回参数: success, data[ {id, name} ]。
+     */
     public function getDepartments()
     {
         $departments = DB::table('departments')
@@ -747,6 +909,11 @@ class SearchController extends Controller
         ]);
     }
 
+    /**
+     * 功能: 获取国家/地区选项（示例数据）。
+     * 接口: GET /api/search/countries (route: api.search.countries)
+     * 返回参数: success, data[ {name, code} ]。
+     */
     public function getCountries()
     {
         return response()->json([

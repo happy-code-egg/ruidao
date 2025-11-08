@@ -12,11 +12,24 @@ use Illuminate\Support\Facades\Artisan;
 class WorkflowController extends Controller
 {
     /**
-     * 获取工作流列表
+     * 功能: 获取工作流列表，支持分页、搜索与筛选
+     * 请求参数:
+     * - page(int, 可选): 页码，默认1
+     * - limit(int, 可选): 每页数量，默认15
+     * - name(string, 可选): 按名称模糊搜索
+     * - code(string, 可选): 按代码模糊搜索
+     * - keyword(string, 可选): 名称/代码/描述综合关键字
+     * - status(int, 可选): 状态筛选（1启用/0禁用）
+     * - isValid(boolean|string|int, 可选): 有效性筛选，支持 true/'true'/1/'1'
+     * - caseType(string|int, 可选): 项目类型筛选
+     * 返回参数:
+     * - 使用 `json_page(data, total, msg)` 标准分页结构
+     * 接口: GET /workflows
      */
     public function index(Request $request)
     {
         try {
+            // 步骤说明：确保数据存在 -> 构建查询 -> 应用搜索/筛选 -> 分页 -> 格式化输出
             // 确保工作流数据存在，如果不存在则调用 Seeder
             $this->ensureWorkflowsExist();
             
@@ -95,7 +108,12 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 获取工作流详情
+     * 功能: 获取指定工作流详情
+     * 请求参数:
+     * - id(int, 必填): 路径参数，工作流ID
+     * 返回参数:
+     * - 使用 `json_success(msg, data)` 成功结构或 `json_fail(msg)` 失败结构
+     * 接口: GET /workflows/{id}
      */
     public function show($id)
     {
@@ -122,7 +140,16 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 创建工作流
+     * 功能: 创建工作流（示例实现，写入逻辑待接入）
+     * 请求参数:
+     * - name(string, 必填): 工作流名称
+     * - code(string, 必填): 工作流代码
+     * - caseType(string, 必填): 项目类型
+     * - description(string, 可选): 描述
+     * - nodes(array, 必填): 节点配置，至少2个
+     * 返回参数:
+     * - 使用 `json_success(msg, data)` 成功结构或 `json_fail(msg)` 失败结构
+     * 接口: POST /workflows
      */
     public function store(Request $request)
     {
@@ -145,6 +172,7 @@ class WorkflowController extends Controller
         }
 
         try {
+            // 步骤说明：校验参数 -> 构造数据 -> 返回创建结果（当前为模拟数据）
             // 模拟创建工作流
             $workflow = [
                 'id' => rand(1000, 9999),
@@ -167,7 +195,14 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 更新工作流
+     * 功能: 更新工作流状态与节点配置
+     * 请求参数:
+     * - id(int, 必填): 路径参数，工作流ID
+     * - isValid(boolean, 可选): 是否启用
+     * - nodes(array, 可选): 节点配置
+     * 返回参数:
+     * - 使用 `json_success(msg)` 成功结构或 `json_fail(msg)` 失败结构
+     * 接口: PUT /workflows/{id}
      */
     public function update(Request $request, $id)
     {
@@ -183,6 +218,7 @@ class WorkflowController extends Controller
         try {
             $workflow = Workflow::findOrFail($id);
             
+            // 步骤说明：查找工作流 -> 有选择地更新状态/节点 -> 设置更新人 -> 保存
             // 更新工作流状态
             if ($request->has('isValid')) {
                 $workflow->status = $request->isValid ? 1 : 0;
@@ -204,7 +240,12 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 删除工作流
+     * 功能: 删除工作流（示例实现）
+     * 请求参数:
+     * - id(int, 必填): 路径参数，工作流ID
+     * 返回参数:
+     * - 使用 `json_success(msg)` 成功结构或 `json_fail(msg)` 失败结构
+     * 接口: DELETE /workflows/{id}
      */
     public function destroy($id)
     {
@@ -217,7 +258,12 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 启用/禁用工作流
+     * 功能: 启用/禁用工作流（示例实现）
+     * 请求参数:
+     * - id(int, 必填): 路径参数，工作流ID
+     * 返回参数:
+     * - 使用 `json_success(msg)` 成功结构或 `json_fail(msg)` 失败结构
+     * 接口: PUT /workflows/{id}/toggle-status
      */
     public function toggleStatus($id)
     {
@@ -230,7 +276,12 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 获取工作流节点配置
+     * 功能: 获取指定工作流的节点配置
+     * 请求参数:
+     * - id(int, 必填): 路径参数，工作流ID
+     * 返回参数:
+     * - 使用 `json_success(msg, data)` 成功结构或 `json_fail(msg)` 失败结构
+     * 接口: GET /workflows/{id}/nodes
      */
     public function getNodes($id)
     {
@@ -249,7 +300,13 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 更新工作流节点配置
+     * 功能: 更新指定工作流的节点配置（示例实现）
+     * 请求参数:
+     * - id(int, 必填): 路径参数，工作流ID
+     * - nodes(array, 必填): 节点配置，至少2个
+     * 返回参数:
+     * - 使用 `json_success(msg)` 成功结构或 `json_fail(msg)` 失败结构
+     * 接口: PUT /workflows/{id}/nodes
      */
     public function updateNodes(Request $request, $id)
     {
@@ -270,7 +327,11 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 获取项目类型列表
+     * 功能: 获取项目类型列表
+     * 请求参数: 无
+     * 返回参数:
+     * - 使用 `json_success(msg, data)` 成功结构或 `json_fail(msg)` 失败结构
+     * 接口: GET /workflows/case-types
      */
     public function getCaseTypes()
     {
@@ -291,12 +352,17 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 获取可分配用户列表（按部门分类）
-     * 只从真实用户表获取数据
+     * 功能: 获取可分配用户列表（按部门分组与排序）
+     * 请求参数: 无
+     * 返回参数:
+     * - 使用 `json_success(msg, data)` 成功结构或 `json_fail(msg)` 失败结构
+     * - data(array): 分组列表，每项包含 `label` 与 `options(label, value)`
+     * 接口: GET /workflows/assignable-users
      */
     public function getAssignableUsers()
     {
         try {
+            // 步骤说明：检查用户表 -> 查询启用用户并按部门/姓名排序 -> 按部门分组 -> 组装下拉选项
             // 检查表是否存在
             if (!DB::getSchemaBuilder()->hasTable('users')) {
                 return json_fail('用户表不存在，请先创建用户数据');
@@ -356,10 +422,14 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 确保工作流数据存在，如果不存在则自动初始化
+     * 功能: 确保工作流数据存在（无则自动初始化）
+     * 请求参数: 无
+     * 返回参数: 无
+     * 接口: 无接口
      */
     private function ensureWorkflowsExist()
     {
+        // 步骤说明：统计工作流数量 -> 若为0则触发Seeder -> 异常记录不阻断流程
         $workflowCount = Workflow::count();
         if ($workflowCount === 0) {
             // 如果没有工作流数据，则运行 Seeder
@@ -373,10 +443,15 @@ class WorkflowController extends Controller
     }
 
     /**
-     * 获取模拟工作流数据（已弃用，现使用数据库）
+     * 功能: 获取模拟工作流数据（已弃用，现改从数据库获取）
+     * 请求参数: 无
+     * 返回参数:
+     * - data(array): 工作流基本字段数组
+     * 接口: 无接口
      */
     private function getMockWorkflows()
     {
+        // 步骤说明：改为从数据库获取启用状态的工作流，并映射为简化结构
         // 改为从数据库获取
         $workflows = Workflow::where('status', 1)->get();
         return $workflows->map(function ($workflow) {

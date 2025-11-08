@@ -9,10 +9,66 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * 流程规则控制器
+ *
+ * 功能:
+ * - 管理与查询流程规则（条件、动作、优先级、启用状态等）
+ * - 提供列表、详情、创建、更新、删除、状态切换以及各类选项获取接口
+ * - 支持按处理事项、项目类型、国家、申请类型等维度筛选
+ *
+ * 路由说明:
+ * - GET    /api/process-rules                          列表 index
+ * - POST   /api/process-rules                          创建 store
+ * - GET    /api/process-rules/{id}                     详情 show
+ * - PUT    /api/process-rules/{id}                     更新 update
+ * - DELETE /api/process-rules/{id}                     删除 destroy
+ * - PUT    /api/process-rules/{id}/toggle-status       切换状态 toggleStatus
+ * - GET    /api/process-rules/process-item-tree        处理事项树 getProcessItemTree
+ * - GET    /api/process-rules/process-items            处理事项列表（同树）getProcessItemTree
+ * - GET    /api/process-rules/process-item-detail/{id} 处理事项详情 getProcessItemDetail
+ * - GET    /api/process-rules/process-item-rules       处理事项规则 getProcessItemRules
+ * - GET    /api/process-rules/rule-types               规则类型 getRuleTypes
+ * - GET    /api/process-rules/case-types               项目类型 getCaseTypes
+ * - GET    /api/process-rules/business-types           业务类型 getBusinessTypes
+ * - GET    /api/process-rules/application-types        申请类型 getApplicationTypes
+ * - GET    /api/process-rules/countries                国家地区 getCountries
+ * - GET    /api/process-rules/process-item-types       处理事项类型 getProcessItemTypes
+ * - GET    /api/process-rules/process-statuses         处理事项状态 getProcessStatuses
+ * - GET    /api/process-rules/users                    用户列表 getUsers
+ *
+ * 统一响应:
+ * - 成功: json_success / json_page（或 response()->json({code,msg,data})）
+ * - 失败: json_fail（或 response()->json 的错误码）
+ *
+ * 依赖:
+ * - 模型 App\Models\ProcessRule
+ * - Facades: Log, DB, Schema
+ * - 鉴权: auth()（用于记录创建/更新人）
+ */
 class ProcessRuleController extends Controller
 {
     /**
-     * 获取流程规则列表
+     * 功能: 获取流程规则列表，支持多条件筛选与分页
+     * 路由说明:
+     * - GET /api/process-rules
+     * 请求参数:
+     * - keyword string 可空，名称/描述模糊匹配
+     * - ruleName string 可空，规则名称模糊匹配
+     * - ruleType string 可空，映射到内部类型（自动生成/提醒通知/状态变更）
+     * - caseType string 可空，映射到项目类型（商标/专利/版权）
+     * - country string 可空，conditions.country JSON 包含匹配
+     * - applicationType int 可空，application_type_id 精确匹配
+     * - status int 可空，状态精确匹配
+     * - isEffective boolean 可空，映射为 status 1/0
+     * - page int 可空，默认1
+     * - limit int 可空，默认15
+     * 返回参数:
+     * - json_page(list,total,message) 其中 list 为格式化后的字段
+     * 异常处理:
+     * - 捕获异常，返回 json_fail 并附带错误信息
+     * 内部说明:
+     * - 使用 with('creator') 预加载创建者信息
      */
     public function index(Request $request)
     {
@@ -129,7 +185,15 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取流程规则详情
+     * 功能: 获取流程规则详情
+     * 路由说明:
+     * - GET /api/process-rules/{id}
+     * 请求参数:
+     * - id path 必填
+     * 返回参数:
+     * - 单条规则详情（含 creator 关联）
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function show($id)
     {
@@ -143,7 +207,29 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 创建流程规则
+     * 功能: 创建流程规则
+     * 路由说明:
+     * - POST /api/process-rules
+     * 请求参数:
+     * - name string 必填
+     * - description string 可空
+     * - rule_type string 可空
+     * - process_item_id int 可空
+     * - case_type/business_type/application_type/country/process_item_type string 可空
+     * - conditions/actions array 可空
+     * - generate_or_complete string 可空，枚举 generate|complete
+     * - processor/fixed_personnel string 可空
+     * - is_assign_case boolean 可空
+     * - internal_deadline/customer_deadline/official_deadline/complete_date array 可空
+     * - status int 可空，0/1
+     * - priority/sort_order int 可空
+     * - is_effective boolean 可空
+     * 返回参数:
+     * - 创建成功后的规则对象
+     * 异常处理:
+     * - 验证失败/其它异常记录日志并返回 json_fail
+     * 内部说明:
+     * - 使用 auth() 记录创建/更新人相关字段
      */
     public function store(Request $request)
     {
@@ -194,7 +280,16 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 更新流程规则
+     * 功能: 更新流程规则
+     * 路由说明:
+     * - PUT /api/process-rules/{id}
+     * 请求参数:
+     * - id path 必填
+     * - 其余字段同创建接口
+     * 返回参数:
+     * - 更新后的规则对象
+     * 异常处理:
+     * - 验证失败/其它异常记录日志并返回 json_fail
      */
     public function update(Request $request, $id)
     {
@@ -246,7 +341,15 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 删除流程规则
+     * 功能: 删除流程规则
+     * 路由说明:
+     * - DELETE /api/process-rules/{id}
+     * 请求参数:
+     * - id path 必填
+     * 返回参数:
+     * - 成功消息
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function destroy($id)
     {
@@ -261,7 +364,15 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 切换流程规则状态
+     * 功能: 切换流程规则的启用状态
+     * 路由说明:
+     * - PUT /api/process-rules/{id}/toggle-status
+     * 请求参数:
+     * - id path 必填
+     * 返回参数:
+     * - 更新后的规则对象
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function toggleStatus($id)
     {
@@ -278,8 +389,18 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取处理事项树形数据
-     * 根据项目类别 -> 国家 -> 处理事项名称的层级结构
+     * 功能: 获取处理事项的树形结构数据
+     * 路由说明:
+     * - GET /api/process-rules/process-item-tree
+     * - GET /api/process-rules/process-items（同上）
+     * 请求参数:
+     * - 无
+     * 返回参数:
+     * - 树形结构：case_type -> country -> process_item
+     * 异常处理:
+     * - 记录日志并返回 json_fail
+     * 内部说明:
+     * - 依赖 \App\Models\ProcessInformation 数据
      */
     public function getProcessItemTree()
     {
@@ -371,7 +492,13 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取规则类型
+     * 功能: 获取规则类型选项
+     * 路由说明:
+     * - GET /api/process-rules/rule-types
+     * 返回参数:
+     * - [{value,label}]
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function getRuleTypes()
     {
@@ -389,7 +516,13 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取项目类型
+     * 功能: 获取项目类型选项
+     * 路由说明:
+     * - GET /api/process-rules/case-types
+     * 返回参数:
+     * - [{value,label}]
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function getCaseTypes()
     {
@@ -407,7 +540,13 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取业务类型
+     * 功能: 获取业务类型选项
+     * 路由说明:
+     * - GET /api/process-rules/business-types
+     * 返回参数:
+     * - [{value,label}]
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function getBusinessTypes()
     {
@@ -425,7 +564,13 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取申请类型
+     * 功能: 获取申请类型选项
+     * 路由说明:
+     * - GET /api/process-rules/application-types
+     * 返回参数:
+     * - [{value,label}]
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function getApplicationTypes()
     {
@@ -445,7 +590,13 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取国家地区
+     * 功能: 获取国家地区选项
+     * 路由说明:
+     * - GET /api/process-rules/countries
+     * 返回参数:
+     * - [{value,label}]
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function getCountries()
     {
@@ -465,7 +616,13 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取处理事项类型
+     * 功能: 获取处理事项类型选项
+     * 路由说明:
+     * - GET /api/process-rules/process-item-types
+     * 返回参数:
+     * - [{value,label}]
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function getProcessItemTypes()
     {
@@ -484,7 +641,15 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 根据处理事项ID获取详情（用于右侧概览表格）
+     * 功能: 根据处理事项ID获取简要详情（右侧概览）
+     * 路由说明:
+     * - GET /api/process-rules/process-item-detail/{id}
+     * 请求参数:
+     * - id path 必填
+     * 返回参数:
+     * - 概览字段：sequence、processItem、caseType、businessType、applicationType、country、processItemType
+     * 异常处理:
+     * - 捕获异常返回 json_fail
      */
     public function getProcessItemDetail($processItemId)
     {
@@ -515,7 +680,18 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 根据条件获取处理事项规则
+     * 功能: 根据条件获取处理事项相关规则列表
+     * 路由说明:
+     * - GET /api/process-rules/process-item-rules
+     * 请求参数:
+     * - process_item_id int 可空，优先按处理事项ID筛选
+     * - case_type string 可空
+     * - country string 可空
+     * - process_item string 可空，处理事项名称模糊匹配
+     * 返回参数:
+     * - 规则列表：格式化字段包含 id/sequence/processItem/country/applicationType/generateOrComplete/ruleName/ruleType/ruleDescription/isEffective/updater/updateTime/priority/conditions/actions
+     * 异常处理:
+     * - 记录日志并返回 json_fail
      */
     public function getProcessItemRules(Request $request)
     {
@@ -580,8 +756,18 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取处理事项状态列表
-     * 根据处理事项ID或名称获取相关状态
+     * 功能: 获取处理事项状态选项列表
+     * 路由说明:
+     * - GET /api/process-rules/process-statuses
+     * 请求参数:
+     * - process_item_id int 可空
+     * - process_item_name string 可空
+     * 返回参数:
+     * - [{id,label,value}]，若表不存在或无数据，返回默认状态集合
+     * 异常处理:
+     * - 出错时记录日志并返回默认状态集合
+     * 内部说明:
+     * - 使用 Schema 检查表存在性，优雅降级
      */
     public function getProcessStatuses(Request $request)
     {
@@ -664,7 +850,15 @@ class ProcessRuleController extends Controller
     }
 
     /**
-     * 获取用户列表（用于固定人员选择）
+     * 功能: 获取启用用户列表（用于固定人员选择）
+     * 路由说明:
+     * - GET /api/process-rules/users
+     * 请求参数:
+     * - department_id int 可空，按部门筛选
+     * 返回参数:
+     * - [{id,label,value,real_name,username,department_name}]
+     * 异常处理:
+     * - 出错时返回错误码并记录日志
      */
     public function getUsers(Request $request)
     {
