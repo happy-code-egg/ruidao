@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 案例费用模型
+ * 管理案例相关的各类费用信息，包括费用类型、金额、支付状态等
+ */
 class CaseFee extends Model
 {
     // 指定对应的数据库表名
@@ -40,6 +44,7 @@ class CaseFee extends Model
     /**
      * 获取关联的案例
      * 建立与 `Cases` 模型的一对多反向关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function case()
     {
@@ -66,6 +71,7 @@ class CaseFee extends Model
     /**
      * 获取费用类型文本
      * 根据 `fee_type` 字段值返回对应的中文费用类型描述
+     * @return string 费用类型文本
      */
     public function getTypeTextAttribute()
     {
@@ -84,6 +90,7 @@ class CaseFee extends Model
     /**
      * 获取支付状态文本
      * 根据 `payment_status` 字段值返回对应的中文支付状态描述
+     * @return string 支付状态文本
      */
     public function getPaymentStatusTextAttribute()
     {
@@ -99,6 +106,7 @@ class CaseFee extends Model
     /**
      * 检查是否逾期
      * 判断当前费用是否已经超过缴费截止日期且未支付
+     * @return boolean 是否逾期
      */
     public function isOverdue()
     {

@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * 案例处理事项模型
+ * 管理案例处理过程中的各项具体任务，包含状态、负责人、截止日期等信息
+ */
 class CaseProcess extends Model
 {
     // 指定对应的数据库表名
@@ -96,6 +100,7 @@ class CaseProcess extends Model
     /**
      * 获取项目
      * 建立与 `Cases` 模型的一对多反向关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function case()
     {
@@ -105,6 +110,7 @@ class CaseProcess extends Model
     /**
      * 获取负责人
      * 建立与 `User` 模型的一对多反向关联，关联处理事项负责人
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function assignedUser()
     {
@@ -114,6 +120,7 @@ class CaseProcess extends Model
     /**
      * 获取配案人
      * 建立与 `User` 模型的一对多反向关联，关联处理事项配案人
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function assigneeUser()
     {
@@ -123,6 +130,7 @@ class CaseProcess extends Model
     /**
      * 获取创建人
      * 建立与 `User` 模型的一对多反向关联，关联记录创建人
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function creator()
     {
@@ -132,6 +140,7 @@ class CaseProcess extends Model
     /**
      * 获取更新人
      * 建立与 `User` 模型的一对多反向关联，关联记录更新人
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function updater()
     {
@@ -141,6 +150,7 @@ class CaseProcess extends Model
     /**
      * 获取核稿人
      * 建立与 `User` 模型的一对多反向关联，关联处理事项核稿人
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function reviewerUser()
     {
@@ -150,6 +160,7 @@ class CaseProcess extends Model
     /**
      * 获取父处理事项
      * 建立与自身模型的一对多反向关联，关联父级处理事项
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function parent()
     {
@@ -159,6 +170,7 @@ class CaseProcess extends Model
     /**
      * 获取子处理事项
      * 建立与自身模型的一对多关联，关联子级处理事项
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function children()
     {
@@ -168,6 +180,9 @@ class CaseProcess extends Model
     /**
      * 状态范围查询
      * 查询作用域 - 根据指定状态筛选处理事项
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @param integer $status 处理状态
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByStatus($query, $status)
     {
@@ -177,6 +192,9 @@ class CaseProcess extends Model
     /**
      * 项目范围查询
      * 查询作用域 - 根据指定案例ID筛选处理事项
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @param integer $caseId 案例ID
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByCase($query, $caseId)
     {
@@ -186,6 +204,9 @@ class CaseProcess extends Model
     /**
      * 负责人范围查询
      * 查询作用域 - 根据指定负责人ID筛选处理事项
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @param integer $userId 用户ID
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByAssignedTo($query, $userId)
     {
@@ -195,6 +216,9 @@ class CaseProcess extends Model
     /**
      * 优先级范围查询
      * 查询作用域 - 根据指定优先级筛选处理事项
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @param integer $priority 优先级
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByPriority($query, $priority)
     {
@@ -204,6 +228,8 @@ class CaseProcess extends Model
     /**
      * 排序范围查询
      * 查询作用域 - 按优先级、截止日期、ID进行排序
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
     {
@@ -213,6 +239,7 @@ class CaseProcess extends Model
     /**
      * 获取状态文本
      * 根据 `process_status` 字段值返回对应的中文状态描述
+     * @return string 状态文本
      */
     public function getStatusTextAttribute()
     {
@@ -229,6 +256,7 @@ class CaseProcess extends Model
     /**
      * 获取优先级文本
      * 根据 `priority_level` 字段值返回对应的中文优先级描述
+     * @return string 优先级文本
      */
     public function getPriorityTextAttribute()
     {
@@ -244,6 +272,7 @@ class CaseProcess extends Model
     /**
      * 检查是否已完成
      * 判断当前处理事项是否已完成状态
+     * @return boolean 是否已完成
      */
     public function isCompleted()
     {
@@ -253,6 +282,7 @@ class CaseProcess extends Model
     /**
      * 检查是否逾期
      * 判断当前处理事项是否已经超过截止日期且未完成
+     * @return boolean 是否逾期
      */
     public function isOverdue()
     {

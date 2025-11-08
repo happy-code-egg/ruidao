@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 代理商等级模型
+ * 代表系统中的代理商等级设置，包含等级名称、编码、佣金比率等信息
+ */
 class AgentLevels extends Model
 {
     // 指定对应的数据库表名
@@ -31,25 +35,43 @@ class AgentLevels extends Model
         'updated_by' => 'integer'   // 更新者ID - 整数类型
     ];
 
-    // 关联创建人
+    /**
+     * 获取创建人
+     * 通过 created_by 字段关联 User 模型
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // 关联更新人
+    /**
+     * 获取更新人
+     * 通过 updated_by 字段关联 User 模型
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    // 状态范围查询 - 只获取启用状态的数据
+    /**
+     * 作用域：启用状态
+     * 用于查询 status=1 的启用状态代理商等级
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeActive($query)
     {
         return $query->where('status', 1);
     }
 
-    // 排序范围查询 - 按排序字段和ID升序排列
+    /**
+     * 作用域：按排序
+     * 按照 sort_order 和 id 字段进行排序
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')->orderBy('id');

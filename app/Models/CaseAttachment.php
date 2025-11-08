@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 案例附件模型
+ * 用于管理案件相关的附件文件信息，包括文件名称、路径、大小等详细数据
+ */
 class CaseAttachment extends Model
 {
     // 指定对应的数据库表名
@@ -33,6 +37,7 @@ class CaseAttachment extends Model
     /**
      * 获取关联的案例
      * 建立与 Cases 模型的一对多反向关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function case()
     {
@@ -42,6 +47,7 @@ class CaseAttachment extends Model
     /**
      * 获取文件大小的可读格式
      * 将字节大小转换为人类可读的格式(B, KB, MB, GB, TB)
+     * @return string 格式化后的文件大小（带单位）
      */
     public function getReadableFileSizeAttribute()
     {

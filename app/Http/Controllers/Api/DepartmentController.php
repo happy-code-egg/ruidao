@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 部门控制器
+ * 负责部门的增删改查和树形结构管理
+ */
 class DepartmentController extends Controller
 {
   /**

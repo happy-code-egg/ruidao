@@ -7,6 +7,10 @@ use App\Models\CaseProcess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 核稿管理控制器（修复版）
+ * 负责核稿流程的管理，包括草稿、待开始、审核中、已完成等状态的查询和处理
+ */
 class ReviewControllerFixed extends Controller
 {
     /**

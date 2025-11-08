@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * 机构控制器
+ * 负责处理机构信息的增删改查、状态管理等功能
+ */
 class AgencyController extends Controller
 {
     /**

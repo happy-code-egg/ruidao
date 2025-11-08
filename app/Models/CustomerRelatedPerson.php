@@ -19,20 +19,20 @@ class CustomerRelatedPerson extends Model
 
     // 定义可批量赋值的字段
     protected $fillable = [
-        'customer_id',                  // 客户ID
-        'related_business_person_id',   // 关联的业务人员ID
+        'customer_id',                  // 客户ID，关联Customer模型
+        'related_business_person_id',   // 关联的业务人员ID，关联User模型
         'person_name',                  // 人员姓名
-        'person_type',                  // 人员类型
-        'phone',                        // 电话
-        'email',                        // 邮箱
+        'person_type',                  // 人员类型，使用常量定义的类型
+        'phone',                        // 电话号码
+        'email',                        // 电子邮箱
         'position',                     // 职位
-        'department',                   // 部门
-        'relationship',                 // 关系
-        'responsibility',               // 职责
-        'is_active',                    // 是否在职
-        'remark',                       // 备注
-        'created_by',                   // 创建人ID
-        'updated_by',                   // 更新人ID
+        'department',                   // 所属部门
+        'relationship',                 // 与客户的关系
+        'responsibility',               // 职责说明
+        'is_active',                    // 是否在职（布尔值）
+        'remark',                       // 备注信息
+        'created_by',                   // 创建人ID，关联User模型
+        'updated_by',                   // 更新人ID，关联User模型
     ];
 
     // 定义字段类型转换

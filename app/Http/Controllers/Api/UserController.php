@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 用户控制器
+ * 负责用户的增删改查、角色分配、密码重置等管理功能
+ * 包含部门和角色信息的相关查询接口
+ */
 class UserController extends Controller
 {
     /**

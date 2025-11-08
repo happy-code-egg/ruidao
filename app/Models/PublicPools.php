@@ -4,21 +4,25 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 公共资源池模型
+ * 用于管理系统中的公共资源池配置，包括资源容量和类型等
+ */
 class PublicPools extends Model
 {
     protected $table = 'public_pools';
     
     protected $fillable = [
-        'name',
-        'code',
-        'description',
-        'status',
-        'sort_order',
-        'pool_name',
-        'pool_type',
-        'capacity',
-        'created_by',
-        'updated_by'
+        'name',        // 名称
+        'code',        // 编码
+        'description', // 描述
+        'status',      // 状态（1:启用, 0:禁用）
+        'sort_order',  // 排序顺序
+        'pool_name',   // 资源池名称
+        'pool_type',   // 资源池类型
+        'capacity',    // 容量
+        'created_by',  // 创建人ID
+        'updated_by'   // 更新人ID
     ];
 
     protected $casts = [
@@ -28,25 +32,43 @@ class PublicPools extends Model
         'updated_by' => 'integer'
     ];
 
-    // 关联创建人
+    /**
+     * 获取创建人
+     * 通过 created_by 字段关联 User 模型
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // 关联更新人
+    /**
+     * 获取更新人
+     * 通过 updated_by 字段关联 User 模型
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    // 状态范围查询
+    /**
+     * 作用域：启用状态
+     * 查询 status = 1 的记录
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder 查询构建器
+     */
     public function scopeActive($query)
     {
         return $query->where('status', 1);
     }
 
-    // 排序范围查询
+    /**
+     * 作用域：按排序排列
+     * 先按 sort_order 字段排序，再按 id 字段排序
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder 查询构建器
+     */
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')->orderBy('id');

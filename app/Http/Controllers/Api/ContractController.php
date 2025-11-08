@@ -17,6 +17,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
 use Rap2hpoutre\FastExcel\FastExcel;
 
+/**
+ * 合同控制器
+ * 负责合同的增删改查、服务管理、附件管理和工作流相关操作
+ */
 class ContractController extends Controller
 {
     protected $workflowService;

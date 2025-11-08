@@ -11,6 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
+/**
+ * 任务分配控制器
+ * 负责处理任务的分配、查询、状态管理等功能
+ */
 class AssignmentController extends Controller
 {
     /**

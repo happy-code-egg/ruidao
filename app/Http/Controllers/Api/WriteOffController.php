@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * 核销控制器
+ * 负责到款单与请款单的核销管理，包括待核销列表查询、核销操作等
+ */
 class WriteOffController extends Controller
 {
     /**

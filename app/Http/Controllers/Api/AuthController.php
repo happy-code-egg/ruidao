@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * 用户认证控制器
+ * 负责处理用户登录、退出登录、获取个人信息、修改个人信息及密码等认证相关功能
+ */
 class AuthController extends Controller
 {
     /**
@@ -147,8 +151,9 @@ class AuthController extends Controller
     }
 
     /**
-    用户登录接口
-     * @return string
+     * 用户退出登录接口
+     * 清除当前用户的登录状态和认证信息
+     * @return \Illuminate\Http\JsonResponse
      */
     public function logout(Request $request)
     {

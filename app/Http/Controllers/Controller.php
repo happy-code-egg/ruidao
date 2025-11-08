@@ -8,16 +8,26 @@ use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
 
+/**
+ * 控制器基类
+ * 所有业务控制器的父类，提供通用功能
+ */
 class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
+    /**
+     * 获取当前认证用户
+     * @return mixed 返回当前登录用户对象
+     */
     public function AuthUser(){
         return request()->user();
     }
 
     /**
-     * DB 集合
-     * @param $data
+     * 数据库查询结果分页处理
+     * 根据请求参数对数据库查询结果进行分页，并返回格式化的分页数据
+     * @param \Illuminate\Database\Eloquent\Builder $data 数据库查询构建器实例
+     * @return \Illuminate\Http\JsonResponse 返回包含分页数据的JSON响应
      */
     public function page($data){
         $pageSize = request()->get('limit') ?: 10;
@@ -58,6 +68,8 @@ class Controller extends BaseController
 
     /**
      * 获取调用方法名
+     * 通过调试回溯获取调用当前方法的类和方法名
+     * @return string 返回调用方法的格式化名称，如 "ClassName::methodName"
      */
     private function getCallerMethod()
     {
@@ -72,6 +84,9 @@ class Controller extends BaseController
 
     /**
      * 根据IP获取地理位置
+     * 识别内网IP并处理外部IP的位置查询
+     * @param string $ip IP地址
+     * @return string 返回地理位置描述
      */
     private function getLocationByIp($ip)
     {

@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * 代理人模型
+ * 代表系统中的代理人信息，包含代理人的基本信息、资格证书信息、联系方式等
+ */
 class Agent extends Model
 {
     // 使用软删除功能，允许记录被"删除"而不实际从数据库中移除
@@ -68,6 +72,8 @@ class Agent extends Model
 
     /**
      * 格式化 created_at 时间
+     * @param string $value 数据库中的创建时间值
+     * @return string 格式化后的时间字符串
      */
     public function getCreatedAtAttribute($value)
     {
@@ -76,6 +82,8 @@ class Agent extends Model
 
     /**
      * 格式化 updated_at 时间
+     * @param string $value 数据库中的更新时间值
+     * @return string 格式化后的时间字符串
      */
     public function getUpdatedAtAttribute($value)
     {
@@ -84,6 +92,8 @@ class Agent extends Model
 
     /**
      * 格式化 deleted_at 时间
+     * @param string|null $value 数据库中的删除时间值
+     * @return string|null 格式化后的时间字符串或null
      */
     public function getDeletedAtAttribute($value)
     {
@@ -92,6 +102,8 @@ class Agent extends Model
 
     /**
      * 格式化 license_expiry 时间
+     * @param string|null $value 数据库中的执照有效期
+     * @return string|null 格式化后的日期字符串或null
      */
     public function getLicenseExpiryAttribute($value)
     {
@@ -100,6 +112,7 @@ class Agent extends Model
 
     /**
      * 创建者关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function creator()
     {
@@ -108,6 +121,7 @@ class Agent extends Model
 
     /**
      * 更新者关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function updater()
     {
@@ -116,6 +130,7 @@ class Agent extends Model
 
     /**
      * 获取代理机构名称属性
+     * @return string 代理机构中文名称
      */
     public function getAgencyNameAttribute()
     {
@@ -124,6 +139,7 @@ class Agent extends Model
 
     /**
      * 获取性别文本
+     * @return mixed 性别值
      */
     public function getGenderTextAttribute()
     {
@@ -132,6 +148,7 @@ class Agent extends Model
 
     /**
      * 获取状态文本
+     * @return string 状态描述文本（有效/无效）
      */
     public function getStatusTextAttribute()
     {

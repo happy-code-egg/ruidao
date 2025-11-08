@@ -7,6 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 案例控制器
+ * 处理案例的增删改查操作
+ * 管理案例信息、状态流转和相关业务逻辑
+ */
 class CaseController extends Controller
 {
     /**
@@ -613,7 +618,20 @@ class CaseController extends Controller
     }
 
     /**
-     * 转换状态字符串为数值
+    转换状态字符串为数值
+    功能说明：
+    将前端传递的状态字符串映射为后端系统使用的状态数值常量
+    支持多种状态别名，确保前后端状态标识的一致性和兼容性
+    未找到映射关系时，尝试将输入直接转换为整数返回
+    状态映射关系：
+    draft -> 1（草稿）
+    to-be-filed, to-be-pending, submitted -> 2（立项中/待处理）
+    processing -> 4（处理中）
+    authorized -> 5（已授权）
+    rejected -> 6（已驳回）
+    filed, completed -> 7（已立项/已完成）
+    @param string $status 状态字符串，来自前端请求
+    @return int 转换后的状态数值
      */
     private function convertStatusToInt($status)
     {

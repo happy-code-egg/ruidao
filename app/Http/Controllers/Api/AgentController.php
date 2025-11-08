@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 代理人控制器
+ * 负责处理代理人信息的增删改查、状态管理等功能
+ */
 class AgentController extends Controller
 {
     /**

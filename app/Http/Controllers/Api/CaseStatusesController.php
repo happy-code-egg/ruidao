@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Models\CaseStatuses;
 use App\Models\User;
 
+/**
+ * 案例状态控制器
+ * 负责处理案例状态配置的增删改查、数据验证等功能
+ */
 class CaseStatusesController extends BaseDataConfigController
 {
     protected function getModelClass()

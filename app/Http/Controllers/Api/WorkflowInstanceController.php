@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * 工作流实例控制器
+ * 负责工作流实例的启动、查询、处理和管理
+ */
 class WorkflowInstanceController extends Controller
 {
     protected $workflowService;

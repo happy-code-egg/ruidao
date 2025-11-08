@@ -4,18 +4,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * 工作流处理记录模型
+ * 用于记录工作流实例中每个节点的处理过程和状态
+ */
 class WorkflowProcess extends Model
 {
 
     protected $fillable = [
-        'instance_id',
-        'node_index',
-        'node_name',
-        'assignee_id',
-        'processor_id',
-        'action',
-        'comment',
-        'processed_at',
+        'instance_id',    // 工作流实例ID
+        'node_index',     // 节点索引
+        'node_name',      // 节点名称
+        'assignee_id',    // 指定处理人ID
+        'processor_id',   // 实际处理人ID
+        'action',         // 处理动作(pending/approve/reject/auto)
+        'comment',        // 处理意见/备注
+        'processed_at',   // 处理时间
     ];
 
     protected $casts = [

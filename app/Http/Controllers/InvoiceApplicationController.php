@@ -11,10 +11,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * 发票申请控制器
+ * 处理发票申请的创建、查询、更新、删除、审批等操作
+ */
 class InvoiceApplicationController extends Controller
 {
     /**
      * 获取发票申请列表
+     * @param Request $request 包含搜索条件的请求对象
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的列表数据，包含分页信息
      */
     public function index(Request $request)
     {
@@ -95,6 +101,8 @@ class InvoiceApplicationController extends Controller
 
     /**
      * 获取发票申请详情
+     * @param int $id 发票申请ID
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的发票申请详情数据
      */
     public function show($id)
     {
@@ -118,6 +126,8 @@ class InvoiceApplicationController extends Controller
 
     /**
      * 创建发票申请
+     * @param Request $request 包含发票申请信息的请求对象
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的创建结果，包含新建的发票申请数据
      */
     public function store(Request $request)
     {
@@ -195,6 +205,9 @@ class InvoiceApplicationController extends Controller
 
     /**
      * 更新发票申请
+     * @param Request $request 包含更新信息的请求对象
+     * @param int $id 发票申请ID
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的更新结果，包含更新后的发票申请数据
      */
     public function update(Request $request, $id)
     {
@@ -247,6 +260,8 @@ class InvoiceApplicationController extends Controller
 
     /**
      * 删除发票申请
+     * @param int $id 发票申请ID
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的删除结果
      */
     public function destroy($id)
     {
@@ -281,6 +296,8 @@ class InvoiceApplicationController extends Controller
 
     /**
      * 保存草稿
+     * @param Request $request 包含发票申请草稿信息的请求对象
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的保存结果，包含保存的草稿数据
      */
     public function saveDraft(Request $request)
     {
@@ -348,6 +365,8 @@ class InvoiceApplicationController extends Controller
 
     /**
      * 获取统计数据
+     * @param Request $request 包含查询条件的请求对象
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的统计数据
      */
     public function statistics(Request $request)
     {
@@ -393,6 +412,8 @@ class InvoiceApplicationController extends Controller
 
     /**
      * 获取待处理列表
+     * @param Request $request 包含查询条件的请求对象
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的待处理发票申请列表
      */
     public function pending(Request $request)
     {
@@ -505,6 +526,9 @@ class InvoiceApplicationController extends Controller
 
     /**
      * 审批通过
+     * @param Request $request 包含审批信息的请求对象
+     * @param int $id 发票申请ID
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的审批结果
      */
     public function approve(Request $request, $id)
     {
@@ -548,6 +572,9 @@ class InvoiceApplicationController extends Controller
 
     /**
      * 审批退回
+     * @param Request $request 包含拒绝信息的请求对象
+     * @param int $id 发票申请ID
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的拒绝结果
      */
     public function reject(Request $request, $id)
     {
@@ -588,7 +615,10 @@ class InvoiceApplicationController extends Controller
     }
 
     /**
-     * 转办
+     * 转交发票申请
+     * @param Request $request 包含转交信息的请求对象
+     * @param int $id 发票申请ID
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的转交结果
      */
     public function transfer(Request $request, $id)
     {

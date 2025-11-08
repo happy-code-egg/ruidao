@@ -15,6 +15,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
+/**
+ * 案例监控控制器
+ * 负责案例处理事项、费用的监控和异常费用的管理
+ */
 class CaseMonitorController extends Controller
 {
     /**

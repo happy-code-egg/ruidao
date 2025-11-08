@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 案件系数模型
+ * 用于管理案件相关的系数配置信息，包括系数名称、排序和有效性等
+ */
 class CaseCoefficient extends Model
 {
     // 指定对应的数据库表名
@@ -33,6 +37,7 @@ class CaseCoefficient extends Model
     /**
      * 获取创建者
      * 建立与 User 模型的一对多反向关联，关联记录创建者
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function creator()
     {
@@ -42,6 +47,7 @@ class CaseCoefficient extends Model
     /**
      * 获取更新者
      * 建立与 User 模型的一对多反向关联，关联记录更新者
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function updater()
     {
@@ -51,6 +57,8 @@ class CaseCoefficient extends Model
     /**
      * 作用域：有效的记录
      * 查询作用域 - 只获取有效状态(is_valid=1)的记录
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeValid($query)
     {
@@ -60,6 +68,8 @@ class CaseCoefficient extends Model
     /**
      * 作用域：按排序查询
      * 查询作用域 - 按 sort 字段升序排列
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
     {
@@ -69,6 +79,7 @@ class CaseCoefficient extends Model
     /**
      * 获取状态文本
      * 根据 is_valid 字段值返回对应的中文状态描述
+     * @return string 状态文本（是或否）
      */
     public function getIsValidTextAttribute()
     {

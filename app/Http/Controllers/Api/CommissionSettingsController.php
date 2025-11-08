@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\CommissionSettings;
 
+/**
+ * 佣金设置控制器
+ * 负责处理佣金规则的增删改查、状态管理等功能
+ */
 class CommissionSettingsController extends BaseDataConfigController
 {
     /**

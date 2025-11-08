@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * 数据配置基础控制器
+ * 为各种配置类控制器提供通用的CRUD操作、数据验证和业务逻辑处理
+ * 子类通过实现抽象方法getModelClass()和getValidationRules()来适配不同的数据模型
  */
 abstract class BaseDataConfigController extends Controller
 {

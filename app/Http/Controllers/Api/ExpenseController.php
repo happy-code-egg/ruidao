@@ -9,6 +9,10 @@ use App\Models\ExpenseHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 支出控制器
+ * 负责支出单的增删改查、状态管理和支出明细管理
+ */
 class ExpenseController extends Controller
 {
     /**

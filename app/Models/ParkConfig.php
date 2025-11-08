@@ -5,21 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * 园区配置模型
+ * 用于管理系统中的园区信息配置
+ */
 class ParkConfig extends Model
 {
     protected $table = 'parks_config';
 
     protected $fillable = [
-        'park_name',
-        'park_code',
-        'description',
-        'address',
-        'contact_person',
-        'contact_phone',
-        'is_valid',
-        'sort_order',
-        'created_by',
-        'updated_by',
+        'park_name',      // 园区名称
+        'park_code',      // 园区代码
+        'description',    // 园区描述
+        'address',        // 园区地址
+        'contact_person', // 联系人
+        'contact_phone',  // 联系电话
+        'is_valid',       // 是否有效（0:无效, 1:有效）
+        'sort_order',     // 排序顺序
+        'created_by',     // 创建人ID
+        'updated_by',     // 更新人ID
     ];
 
     protected $casts = [
@@ -31,11 +35,23 @@ class ParkConfig extends Model
         'updated_at' => 'datetime',
     ];
 
+    /**
+     * 格式化创建时间
+     * 将时间戳转换为 Y-m-d H:i:s 格式
+     * @param mixed $value 原始时间值
+     * @return string 格式化的时间字符串
+     */
     public function getCreatedAtAttribute($value)
     {
         return $this->asDateTime($value)->format('Y-m-d H:i:s');
     }
 
+    /**
+     * 格式化更新时间
+     * 将时间戳转换为 Y-m-d H:i:s 格式
+     * @param mixed $value 原始时间值
+     * @return string 格式化的时间字符串
+     */
     public function getUpdatedAtAttribute($value)
     {
         return $this->asDateTime($value)->format('Y-m-d H:i:s');
@@ -49,6 +65,9 @@ class ParkConfig extends Model
 
     /**
      * 作用域：启用状态
+     * 查询 is_valid = 1 的记录
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder 查询构建器
      */
     public function scopeEnabled($query)
     {
@@ -57,6 +76,9 @@ class ParkConfig extends Model
 
     /**
      * 作用域：按排序排列
+     * 先按 sort_order 字段排序，再按 id 字段排序
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder 查询构建器
      */
     public function scopeOrdered($query)
     {
@@ -65,6 +87,8 @@ class ParkConfig extends Model
 
     /**
      * 获取状态文本
+     * 将 is_valid 字段值转换为对应的中文状态文本
+     * @return string 状态文本（启用或禁用）
      */
     public function getStatusTextAttribute()
     {
@@ -73,6 +97,8 @@ class ParkConfig extends Model
 
     /**
      * 获取完整地址
+     * 组合园区名称和地址信息
+     * @return string 完整地址（园区名称 - 地址）
      */
     public function getFullAddressAttribute()
     {
@@ -80,7 +106,9 @@ class ParkConfig extends Model
     }
 
     /**
-     * 获取客户
+     * 获取关联的客户
+     * 通过 `park_id` 字段一对多关联 `Customer` 模型
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function customers()
     {

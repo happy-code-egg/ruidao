@@ -8,6 +8,10 @@ use App\Models\FileCategories;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * 通知规则控制器
+ * 负责通知规则的增删改查、状态管理和规则配置
+ */
 class NotificationRuleController extends Controller
 {
     /**

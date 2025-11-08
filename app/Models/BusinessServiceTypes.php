@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 业务服务类型模型
+ * 用于管理系统中各类业务服务的类型配置，包括服务名称、编码、分类等信息
+ */
 class BusinessServiceTypes extends Model
 {
     // 指定对应的数据库表名
@@ -36,6 +40,8 @@ class BusinessServiceTypes extends Model
     /**
      * 格式化 created_at 时间
      * 将创建时间格式化为 Y-m-d H:i:s 格式
+     * @param string $value 原始时间值
+     * @return string 格式化后的时间字符串
      */
     public function getCreatedAtAttribute($value)
     {
@@ -45,6 +51,8 @@ class BusinessServiceTypes extends Model
     /**
      * 格式化 updated_at 时间
      * 将更新时间格式化为 Y-m-d H:i:s 格式
+     * @param string $value 原始时间值
+     * @return string 格式化后的时间字符串
      */
     public function getUpdatedAtAttribute($value)
     {
@@ -54,6 +62,7 @@ class BusinessServiceTypes extends Model
     /**
      * 获取状态文本
      * 根据 status 字段值返回对应的中文状态描述
+     * @return string 状态文本（启用或禁用）
      */
     public function getStatusTextAttribute()
     {
@@ -63,6 +72,8 @@ class BusinessServiceTypes extends Model
     /**
      * 作用域：启用状态
      * 查询作用域 - 只获取状态为启用(status=1)的记录
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeEnabled($query)
     {
@@ -72,6 +83,8 @@ class BusinessServiceTypes extends Model
     /**
      * 作用域：按排序
      * 查询作用域 - 按 sort_order 字段和 id 字段进行升序排序
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
     {
@@ -81,6 +94,7 @@ class BusinessServiceTypes extends Model
     /**
      * 创建者关联
      * 建立与 User 模型的反向关联，通过 created_by 字段关联用户的 id 字段
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function creator()
     {
@@ -90,6 +104,7 @@ class BusinessServiceTypes extends Model
     /**
      * 更新者关联
      * 建立与 User 模型的反向关联，通过 updated_by 字段关联用户的 id 字段
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function updater()
     {
@@ -99,6 +114,7 @@ class BusinessServiceTypes extends Model
     /**
      * 处理API响应格式
      * 自定义模型数组序列化格式，指定返回给API的字段及其格式
+     * @return array 格式化后的API响应数据
      */
     public function toArray()
     {

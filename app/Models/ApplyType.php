@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 申请类型模型
+ * 定义系统中的申请类型，包含国家、案件类型、申请类型名称等信息
+ */
 class ApplyType extends Model
 {
     // 指定对应的数据库表名
@@ -35,6 +39,7 @@ class ApplyType extends Model
     /**
      * 字段映射 - 前端使用sort，数据库使用sort_order
      * 获取排序字段值 - 将数据库字段sort_order映射为前端字段sort
+     * @return integer 排序字段值
      */
     public function getSortAttribute()
     {
@@ -43,6 +48,8 @@ class ApplyType extends Model
 
     /**
      * 设置排序字段值 - 将前端字段sort映射为数据库字段sort_order
+     * @param integer $value 排序字段值
+     * @return void
      */
     public function setSortAttribute($value)
     {
@@ -52,6 +59,7 @@ class ApplyType extends Model
     /**
      * 获取状态文本
      * 根据status字段值返回对应的中文状态描述
+     * @return string 状态文本（启用或禁用）
      */
     public function getStatusTextAttribute()
     {
@@ -61,6 +69,8 @@ class ApplyType extends Model
     /**
      * 作用域：启用状态
      * 查询作用域 - 只获取状态为启用(status=1)的记录
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeEnabled($query)
     {
@@ -70,6 +80,8 @@ class ApplyType extends Model
     /**
      * 作用域：按排序
      * 查询作用域 - 按sort_order字段和id字段进行升序排序
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
     {

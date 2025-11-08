@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 
+/**
+ * 工作流控制器
+ * 负责工作流的增删改查、状态管理和流程实例的相关操作
+ */
 class WorkflowController extends Controller
 {
     /**

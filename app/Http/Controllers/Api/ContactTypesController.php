@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Models\ContactTypes;
 use App\Models\User;
 
+/**
+ * 联系人类型控制器
+ * 负责处理联系人类型的增删改查、状态管理等功能
+ */
 class ContactTypesController extends BaseDataConfigController
 {
     /**

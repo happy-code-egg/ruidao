@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * 案例模型
+ * 代表系统中的业务案例，包含案例基本信息、状态流转、相关业务数据等
+ */
 class Cases extends Model
 {
     // 使用软删除功能，允许记录被"删除"而不实际从数据库中移除
@@ -195,6 +199,7 @@ class Cases extends Model
     /**
      * 获取客户
      * 建立与 Customer 模型的一对多反向关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function customer()
     {
@@ -204,6 +209,7 @@ class Cases extends Model
     /**
      * 获取合同
      * 建立与 CustomerContract 模型的一对多反向关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function contract()
     {
@@ -213,6 +219,7 @@ class Cases extends Model
     /**
      * 获取产品信息
      * 建立与 Product 模型的一对多反向关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function product()
     {
@@ -222,6 +229,7 @@ class Cases extends Model
     /**
      * 获取业务人员
      * 建立与 User 模型的一对多反向关联，关联业务人员
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function businessPerson()
     {
@@ -231,6 +239,7 @@ class Cases extends Model
     /**
      * 获取技术主导
      * 建立与 User 模型的一对多反向关联，关联技术主导人员
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function techLeader()
     {
@@ -240,6 +249,7 @@ class Cases extends Model
     /**
      * 获取代理师
      * 建立与 User 模型的一对多反向关联，关联代理师
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function agent()
     {
@@ -249,6 +259,7 @@ class Cases extends Model
     /**
      * 获取助理
      * 建立与 User 模型的一对多反向关联，关联助理
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function assistant()
     {
@@ -258,6 +269,7 @@ class Cases extends Model
     /**
      * 获取创建人
      * 建立与 User 模型的一对多反向关联，关联记录创建人
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function creator()
     {
@@ -267,6 +279,7 @@ class Cases extends Model
     /**
      * 获取更新人
      * 建立与 User 模型的一对多反向关联，关联记录更新人
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function updater()
     {
@@ -276,6 +289,7 @@ class Cases extends Model
     /**
      * 获取指派用户（案例处理人）
      * case_handler是varchar类型，存储用户名或ID，暂时不用作关系查询
+     * @return \App\Models\User|null 用户模型实例或null
      */
     public function getAssignedUserAttribute()
     {
@@ -295,6 +309,7 @@ class Cases extends Model
     /**
      * 获取案例费用
      * 建立与 CaseFee 模型的一对多关联
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function fees()
     {
@@ -304,6 +319,7 @@ class Cases extends Model
     /**
      * 获取服务费
      * 建立与 CaseFee 模型的一对多关联，只获取服务费类型
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function serviceFees()
     {
@@ -313,6 +329,7 @@ class Cases extends Model
     /**
      * 获取官费
      * 建立与 CaseFee 模型的一对多关联，只获取官方费类型
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function officialFees()
     {
@@ -322,6 +339,7 @@ class Cases extends Model
     /**
      * 获取案例附件
      * 建立与 CaseAttachment 模型的一对多关联
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function attachments()
     {
@@ -331,6 +349,7 @@ class Cases extends Model
     /**
      * 获取处理事项
      * 建立与 CaseProcess 模型的一对多关联
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function processes()
     {
@@ -340,6 +359,7 @@ class Cases extends Model
     /**
      * 案例类型文本
      * 根据 case_type 字段值返回对应的中文案例类型描述
+     * @return string 案例类型文本描述
      */
     public function getTypeTextAttribute()
     {
@@ -356,6 +376,7 @@ class Cases extends Model
     /**
      * 案例状态文本
      * 根据 case_status 字段值返回对应的中文案例状态描述
+     * @return string 案例状态文本描述
      */
     public function getStatusTextAttribute()
     {
@@ -375,6 +396,7 @@ class Cases extends Model
     /**
      * 优先级文本
      * 根据 priority_level 字段值返回对应的中文优先级描述
+     * @return string 优先级文本描述
      */
     public function getPriorityTextAttribute()
     {
@@ -390,6 +412,7 @@ class Cases extends Model
     /**
      * 获取立项工作流实例（最新的）
      * 建立与 WorkflowInstance 模型的一对一关联，获取最新创建的工作流实例
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
     public function workflowInstance()
     {
@@ -401,6 +424,7 @@ class Cases extends Model
     /**
      * 获取所有工作流实例
      * 建立与 WorkflowInstance 模型的一对多关联，获取所有工作流实例并按创建时间倒序排列
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function workflowInstances()
     {
@@ -412,6 +436,8 @@ class Cases extends Model
     /**
      * 获取当前用户在此案例中的待办任务
      * 根据用户ID获取其在当前案例工作流中的待处理任务
+     * @param int $userId 用户ID
+     * @return \App\Models\WorkflowInstance|null 工作流实例或null
      */
     public function getPendingTasksForUser($userId)
     {

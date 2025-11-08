@@ -7,19 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 /**
-申请类型配置控制器
-继承基础数据配置控制器，专门处理申请类型相关的配置管理（如增删改查、数据验证等）
-/
-class ApplyTypeController extends BaseDataConfigController
-{
-/*
-获取申请类型对应的数据模型类名
-用于基础数据配置控制器的通用逻辑（如模型实例化、数据查询 / 操作等）
-@return string 申请类型模型类的完整命名空间路径
+ * 申请类型配置控制器
+ * 继承基础数据配置控制器，专门处理申请类型相关的配置管理（如增删改查、数据验证等）
  */
 class ApplyTypeController extends BaseDataConfigController
 {
-
     /**
      * 获取模型类名
      *

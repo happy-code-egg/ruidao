@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * 代理机构模型
+ * 代表系统中的代理机构信息，包含机构基本信息、联系方式、资质信息等
+ */
 class Agency extends Model
 {
     // 使用软删除功能，允许记录被"删除"而不实际从数据库中移除
@@ -94,6 +98,8 @@ class Agency extends Model
 
     /**
      * 格式化 deleted_at 时间
+     * @param string|null $value 数据库中的删除时间值
+     * @return string|null 格式化后的时间字符串或null
      */
     public function getDeletedAtAttribute($value)
     {
@@ -102,6 +108,8 @@ class Agency extends Model
 
     /**
      * 格式化 create_time 时间
+     * @param string|null $value 数据库中的创建日期值
+     * @return string|null 格式化后的日期字符串或null
      */
     public function getCreateTimeAttribute($value)
     {
@@ -110,6 +118,7 @@ class Agency extends Model
 
     /**
      * 创建者关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function creator()
     {
@@ -118,6 +127,7 @@ class Agency extends Model
 
     /**
      * 更新者关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function updater()
     {

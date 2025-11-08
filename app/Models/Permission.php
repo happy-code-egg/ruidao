@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 权限模型
+ * 定义系统中的权限点，包含菜单、页面、按钮和API等各类权限
+ */
 class Permission extends Model
 {
 
@@ -13,12 +17,12 @@ class Permission extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'permission_code',
-        'permission_name',
-        'parent_id',
-        'permission_type',
-        'resource_url',
-        'sort_order',
+        'permission_code',   // 权限编码
+        'permission_name',   // 权限名称
+        'parent_id',         // 父权限ID
+        'permission_type',   // 权限类型（1:菜单, 2:页面, 3:按钮, 4:接口）
+        'resource_url',      // 资源路径
+        'sort_order',        // 排序顺序
     ];
 
     protected $casts = [
@@ -38,7 +42,9 @@ class Permission extends Model
     const TYPE_API = 4;
 
     /**
-     * 获取权限角色
+     * 获取权限关联的角色
+     * 多对多关联 Role 模型
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function roles()
     {
@@ -47,6 +53,8 @@ class Permission extends Model
 
     /**
      * 获取父权限
+     * 通过 parent_id 字段自关联 Permission 模型
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function parent()
     {
@@ -55,6 +63,8 @@ class Permission extends Model
 
     /**
      * 获取子权限
+     * 通过 parent_id 字段一对多自关联 Permission 模型
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function children()
     {
@@ -64,7 +74,9 @@ class Permission extends Model
 
 
     /**
-     * 权限类型文本
+     * 获取权限类型文本
+     * 将 permission_type 字段值转换为对应的中文类型名称
+     * @return string 权限类型文本
      */
     public function getTypeTextAttribute()
     {
@@ -80,6 +92,8 @@ class Permission extends Model
 
     /**
      * 递归获取所有子权限ID
+     * 递归收集当前权限及其所有子权限的ID
+     * @return array 权限ID数组
      */
     public function getAllChildrenIds()
     {
@@ -95,6 +109,9 @@ class Permission extends Model
 
     /**
      * 获取权限树结构
+     * 递归获取指定父权限下的完整权限树
+     * @param integer $parentId 父权限ID，默认为0（根节点）
+     * @return \Illuminate\Database\Eloquent\Collection 权限树集合
      */
     public static function getTree($parentId = 0)
     {
