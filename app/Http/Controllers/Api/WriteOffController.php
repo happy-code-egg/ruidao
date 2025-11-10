@@ -12,10 +12,37 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * 核销控制器
+ * 负责到款单与请款单的核销管理，包括待核销列表查询、核销操作等
+ */
 class WriteOffController extends Controller
 {
     /**
      * 获取待核销列表
+     *
+     * 请求参数:
+     * - paymentNo(string)：到款单号，模糊匹配
+     * - requestNo(string)：请款单号，模糊匹配
+     * - customerName(string)：客户名称，模糊匹配
+     * - contractNo(string)：合同号，模糊匹配
+     * - receivedTimeStart(string:YYYY-MM-DD)：到账开始日期
+     * - receivedTimeEnd(string:YYYY-MM-DD)：到账结束日期
+     * - minAmount(number)：最小到款金额
+     * - maxAmount(number)：最大到款金额
+     * - claimedBy(string)：认领人姓名，模糊匹配
+     * - page(int)：页码，默认1
+     * - pageSize(int)：每页数量，默认10
+     *
+     * 返回参数:
+     * - list(array)：记录列表（字段：id、paymentNo、customerName、customerId、techLead、contractNo、totalAmount、usedAmount、remainingAmount、receivedTime、claimedBy、matchedRequests[{requestNo,amount}]、waitingDays）
+     * - total(int)：总记录数
+     * - page(int)：当前页
+     * - pageSize(int)：每页大小
+     *
+     * 功能:
+     * - 查询已认领但未完全核销的到款单，支持多条件筛选与分页
+     * - 接口: GET /write-offs/pending
      */
     public function getPendingList(Request $request)
     {
@@ -133,6 +160,19 @@ class WriteOffController extends Controller
 
     /**
      * 获取待核销统计
+     *
+     * 请求参数:
+     * - 无
+     *
+     * 返回参数:
+     * - totalCount(int)：待核销到款单数量
+     * - totalAmount(string)：待核销到款总额，保留两位小数
+     * - matchedCount(int)：已匹配请款单的到款数
+     * - unmatchedCount(int)：未匹配请款单的到款数
+     *
+     * 功能:
+     * - 统计已认领到款单的数量与金额，并区分是否匹配请款单
+     * - 接口: GET /write-offs/pending/statistics
      */
     public function getPendingStatistics(Request $request)
     {
@@ -148,7 +188,6 @@ class WriteOffController extends Controller
                 ->where('status', 3)
                 ->whereHas('paymentRequests')
                 ->count();
-
             $unmatchedCount = $totalCount - $matchedCount;
 
             return json_success('获取成功', [
@@ -166,10 +205,24 @@ class WriteOffController extends Controller
 
     /**
      * 执行核销
+     *
+     * 请求参数:
+     * - paymentReceivedId(int, required)：到款ID
+     * - writeOffAmount(number, required, min:0.01)：核销金额
+     * - requestId(int, optional)：关联请款单ID
+     * - remark(string, optional)：备注
+     *
+     * 返回参数:
+     * - writeOffNo(string)：生成的核销单号
+     *
+     * 功能:
+     * - 对指定到款进行核销，校验剩余可核销金额，记录核销并更新到款累计核销与状态
+     * - 接口: POST /write-offs/write-off
      */
     public function writeOff(Request $request)
     {
         try {
+            // 步骤1：参数校验
             $validator = Validator::make($request->all(), [
                 'paymentReceivedId' => 'required|exists:payment_receiveds,id',
                 'writeOffAmount' => 'required|numeric|min:0.01',
@@ -181,11 +234,12 @@ class WriteOffController extends Controller
                 return json_fail('验证失败', $validator->errors());
             }
 
+            // 步骤2：开启事务
             DB::beginTransaction();
 
             $paymentReceived = PaymentReceived::findOrFail($request->paymentReceivedId);
 
-            // 检查待核销金额
+            // 步骤3：计算已核销与剩余可核销金额，并校验
             $usedAmount = WriteOff::where('payment_received_id', $paymentReceived->id)
                 ->where('status', 1)
                 ->sum('write_off_amount');
@@ -196,7 +250,7 @@ class WriteOffController extends Controller
                 return json_fail('核销金额不能超过待核销金额');
             }
 
-            // 创建核销记录
+            // 步骤4：创建核销记录
             $writeOff = WriteOff::create([
                 'write_off_no' => WriteOff::generateWriteOffNo(),
                 'payment_received_id' => $paymentReceived->id,
@@ -212,7 +266,7 @@ class WriteOffController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
-            // 更新到款单状态
+            // 步骤5：更新到款单累计核销与状态
             $newUsedAmount = $usedAmount + $request->writeOffAmount;
             $newRemainingAmount = $paymentReceived->amount - $newUsedAmount;
 
@@ -222,6 +276,7 @@ class WriteOffController extends Controller
                 'status' => $newRemainingAmount <= 0 ? 4 : 3, // 4-已核销, 3-已认领
             ]);
 
+            // 步骤6：提交事务
             DB::commit();
 
             return json_success('核销成功', ['writeOffNo' => $writeOff->write_off_no]);
@@ -236,10 +291,27 @@ class WriteOffController extends Controller
 
     /**
      * 批量核销
+     *
+     * 请求参数:
+     * - items(array, required)：核销项列表，元素字段：
+     *   - paymentReceivedId(int, required)：到款ID
+     *   - writeOffAmount(number, required, min:0.01)：核销金额
+     *   - requestId(int, optional)：关联请款单ID
+     *   - remark(string, optional)：备注
+     *
+     * 返回参数:
+     * - successCount(int)：成功条数
+     * - failedCount(int)：失败条数
+     * - failedItems(array)：失败项[{paymentNo(string), reason(string)}]
+     *
+     * 功能:
+     * - 批量对到款进行核销，逐项校验剩余金额，支持部分失败并返回失败原因
+     * - 接口: POST /write-offs/batch-write-off
      */
     public function batchWriteOff(Request $request)
     {
         try {
+            // 步骤1：参数校验
             $validator = Validator::make($request->all(), [
                 'items' => 'required|array',
                 'items.*.paymentReceivedId' => 'required|exists:payment_receiveds,id',
@@ -252,11 +324,13 @@ class WriteOffController extends Controller
                 return json_fail('验证失败', $validator->errors());
             }
 
+            // 步骤2：开启事务
             DB::beginTransaction();
 
             $successCount = 0;
             $failedItems = [];
 
+            // 步骤3：逐项处理核销
             foreach ($request->items as $item) {
                 try {
                     $paymentReceived = PaymentReceived::findOrFail($item['paymentReceivedId']);
@@ -308,6 +382,7 @@ class WriteOffController extends Controller
                 }
             }
 
+            // 步骤4：提交事务并汇总结果
             DB::commit();
 
             return json_success('批量核销完成', [
@@ -325,6 +400,30 @@ class WriteOffController extends Controller
 
     /**
      * 获取核销明细列表(已核销)
+     *
+     * 请求参数:
+     * - writeOffNo(string)：核销单号，模糊匹配
+     * - paymentNo(string)：到款单号，模糊匹配
+     * - requestNo(string)：请款单号，模糊匹配
+     * - customerName(string)：客户名称，模糊匹配
+     * - writeOffTimeStart(string:YYYY-MM-DD)：核销开始日期
+     * - writeOffTimeEnd(string:YYYY-MM-DD)：核销结束日期
+     * - minAmount(number)：最小核销金额
+     * - maxAmount(number)：最大核销金额
+     * - writeOffBy(string)：核销人姓名，模糊匹配
+     * - status(int)：状态（1已完成，2已撤销）
+     * - page(int)：页码，默认1
+     * - pageSize(int)：每页数量，默认10
+     *
+     * 返回参数:
+     * - list(array)：记录列表（字段：id、writeOffNo、paymentNo、requestNo、customerName、customerId、techLead、contractNo、writeOffAmount、writeOffDate、writeOffBy、status、remark、createTime）
+     * - total(int)：总记录数
+     * - page(int)：当前页
+     * - pageSize(int)：每页大小
+     *
+     * 功能:
+     * - 查询已完成的核销记录，支持多条件筛选与分页
+     * - 接口: GET /write-offs/completed
      */
     public function getCompletedList(Request $request)
     {
@@ -429,6 +528,19 @@ class WriteOffController extends Controller
 
     /**
      * 获取核销明细统计
+     *
+     * 请求参数:
+     * - 无
+     *
+     * 返回参数:
+     * - totalCount(int)：已完成核销记录数
+     * - totalAmount(string)：已完成核销总额
+     * - thisMonthCount(int)：本月核销记录数
+     * - thisMonthAmount(string)：本月核销总额
+     *
+     * 功能:
+     * - 统计核销明细的总体与本月数据（不含撤销）
+     * - 接口: GET /write-offs/completed/statistics
      */
     public function getCompletedStatistics(Request $request)
     {
@@ -465,6 +577,19 @@ class WriteOffController extends Controller
 
     /**
      * 获取核销完成统计
+     *
+     * 请求参数:
+     * - 无
+     *
+     * 返回参数:
+     * - totalCount(int)：已完全核销的到款单数量
+     * - totalAmount(string)：已完全核销的到款总额
+     * - thisMonthCount(int)：本月完成核销的到款数
+     * - thisMonthAmount(string)：本月完成核销的到款总额
+     *
+     * 功能:
+     * - 针对到款维度统计“核销完成”（到款累计核销=到款总额）的数据
+     * - 接口: GET /write-offs/write-off-completed/statistics
      */
     public function getWriteOffCompletedStatistics(Request $request)
     {
@@ -506,6 +631,21 @@ class WriteOffController extends Controller
 
     /**
      * 获取核销完成列表(用于核销完成弹窗)
+     *
+     * 请求参数:
+     * - page(int)：页码，默认1
+     * - pageSize(int)：每页数量，默认10
+     *
+     * 返回参数:
+     * - list(array)：到款完成核销列表，字段：id、paymentNo、customerName、customerId、techLead、totalAmount、claimedAmount、receivedDate、writeOffs[{writeOffNo, writeOffAmount, writeOffDate, writeOffBy, requestNo}]
+     * - total(int)：总记录数
+     * - page(int)：当前页
+     * - pageSize(int)：每页大小
+     * - statistics(object)：统计汇总（totalCount、totalAmount、customerCount、requestCount）
+     *
+     * 功能:
+     * - 展示已完全核销的到款单及其关联的核销记录，并提供统计数据
+     * - 接口: GET /write-offs/write-off-completed
      */
     public function getWriteOffCompletedList(Request $request)
     {
@@ -591,10 +731,22 @@ class WriteOffController extends Controller
 
     /**
      * 撤销核销
+     *
+     * 请求参数:
+     * - id(path int, required)：核销记录ID
+     * - reason(string, optional)：撤销原因
+     *
+     * 返回参数:
+     * - message(string)：操作结果描述
+     *
+     * 功能:
+     * - 将指定核销记录状态改为已撤销，并回退到款的累计核销金额与状态
+     * - 接口: POST /write-offs/{id}/revert
      */
     public function revertWriteOff(Request $request, $id)
     {
         try {
+            // 步骤1：参数校验
             $validator = Validator::make($request->all(), [
                 'reason' => 'nullable|string',
             ]);
@@ -603,17 +755,18 @@ class WriteOffController extends Controller
                 return json_fail('验证失败', $validator->errors());
             }
 
+            // 步骤2：开启事务
             DB::beginTransaction();
 
             $writeOff = WriteOff::findOrFail($id);
 
-            // 只有已完成状态才能撤销
+            // 步骤3：仅允许撤销已完成的核销记录
             if ($writeOff->status != 1) {
                 DB::rollBack();
                 return json_fail('只有已完成状态的核销记录才能撤销');
             }
 
-            // 更新核销记录状态
+            // 步骤4：更新核销记录状态为已撤销
             $writeOff->update([
                 'status' => 2, // 2-已撤销
                 'reverted_by' => Auth::id(),
@@ -621,7 +774,7 @@ class WriteOffController extends Controller
                 'revert_reason' => $request->reason,
             ]);
 
-            // 更新到款单金额
+            // 步骤5：回退到款累计核销金额并恢复状态
             $paymentReceived = $writeOff->paymentReceived;
             $newClaimedAmount = $paymentReceived->claimed_amount - $writeOff->write_off_amount;
             $newUnclaimedAmount = $paymentReceived->unclaimed_amount + $writeOff->write_off_amount;
@@ -632,6 +785,7 @@ class WriteOffController extends Controller
                 'status' => 3, // 3-已认领(撤销后回到已认领状态)
             ]);
 
+            // 步骤6：提交事务
             DB::commit();
 
             return json_success('撤销核销成功');
@@ -646,10 +800,24 @@ class WriteOffController extends Controller
 
     /**
      * 批量撤销核销
+     *
+     * 请求参数:
+     * - ids(array, required)：核销记录ID列表
+     * - reason(string, optional)：撤销原因
+     *
+     * 返回参数:
+     * - successCount(int)：成功条数
+     * - failedCount(int)：失败条数
+     * - failedItems(array)：失败项[{writeOffNo(string), reason(string)}]
+     *
+     * 功能:
+     * - 批量撤销核销记录，逐项校验状态并回退到款累计核销金额，支持部分失败
+     * - 接口: POST /write-offs/batch-revert
      */
     public function batchRevertWriteOff(Request $request)
     {
         try {
+            // 步骤1：参数校验
             $validator = Validator::make($request->all(), [
                 'ids' => 'required|array',
                 'ids.*' => 'required|exists:write_offs,id',
@@ -660,11 +828,13 @@ class WriteOffController extends Controller
                 return json_fail('验证失败', $validator->errors());
             }
 
+            // 步骤2：开启事务
             DB::beginTransaction();
 
             $successCount = 0;
             $failedItems = [];
 
+            // 步骤3：逐项处理撤销
             foreach ($request->ids as $id) {
                 try {
                     $writeOff = WriteOff::findOrFail($id);
@@ -704,6 +874,7 @@ class WriteOffController extends Controller
                 }
             }
 
+            // 步骤4：提交事务并汇总结果
             DB::commit();
 
             return json_success('批量撤销完成', [
@@ -721,6 +892,16 @@ class WriteOffController extends Controller
 
     /**
      * 获取核销详情
+     *
+     * 请求参数:
+     * - id(path int, required)：核销记录ID
+     *
+     * 返回参数:
+     * - 详情对象：id、writeOffNo、paymentNo、requestNo、customerName、customerId、techLead、contractNo、writeOffAmount、writeOffDate、writeOffBy、status、remark、revertedBy、revertedAt、revertReason、createTime、paymentInfo{paymentNo,totalAmount,totalUsed,currentUsed,remaining,usageRate}、operationLogs[{action,operator,time,comment}]
+     *
+     * 功能:
+     * - 返回核销记录的完整细节信息（含到款占用明细及操作日志）
+     * - 接口: GET /write-offs/{id}
      */
     public function show($id)
     {
@@ -798,6 +979,16 @@ class WriteOffController extends Controller
 
     /**
      * 导出待核销列表
+     *
+     * 请求参数:
+     * - paymentNo(string, optional)：到款单号，模糊匹配
+     *
+     * 返回参数:
+     * - 文件下载：Excel（xlsx）
+     *
+     * 功能:
+     * - 导出筛选后的待核销到款列表为Excel文件
+     * - 接口: GET /write-offs/export/pending
      */
     public function exportPending(Request $request)
     {
@@ -845,6 +1036,16 @@ class WriteOffController extends Controller
 
     /**
      * 导出核销明细
+     *
+     * 请求参数:
+     * - writeOffNo(string, optional)：核销单号，模糊匹配
+     *
+     * 返回参数:
+     * - 文件下载：Excel（xlsx）
+     *
+     * 功能:
+     * - 导出核销明细列表为Excel文件
+     * - 接口: GET /write-offs/export/completed
      */
     public function exportCompleted(Request $request)
     {

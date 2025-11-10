@@ -11,13 +11,33 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 用户控制器
+ * 负责用户的增删改查、角色分配、密码重置等管理功能
+ * 包含部门和角色信息的相关查询接口
+ */
 class UserController extends Controller
 {
     /**
-     * 获取用户列表
+     * 功能: 获取用户列表，支持关键词/用户名/真实姓名/部门/状态筛选与分页
+     * 请求参数:
+     * - keyword(string, 可选): 模糊匹配用户名/真实姓名/邮箱/电话
+     * - username(string, 可选): 模糊匹配用户名
+     * - real_name(string, 可选): 模糊匹配真实姓名
+     * - department_id(int, 可选): 部门ID精确筛选
+     * - status(int, 可选): 用户状态（0=禁用，1=启用）
+     * - page(int, 可选): 页码，默认1
+     * - limit(int, 可选): 每页数量，默认15，最大100
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(object): {list(array<object>), total(int), page(int), limit(int)}
+     * - list字段: id, username, real_name, email, phone, avatar_url, department{id,name}, position,
+     *   employee_no, status, status_text, roles[{id,name,code}], last_login_time, created_at, updated_at
+     * 接口: GET /users（当前存在公开测试路由）
      */
     public function index(Request $request)
     {
+        // 步骤说明：解析过滤条件 -> 构建查询 -> 统计总数 -> 稳定排序分页 -> 组装返回数据
         try {
             $query = User::with(['department', 'roles']);
 
@@ -100,7 +120,13 @@ class UserController extends Controller
     }
 
     /**
-     * 获取用户详情
+     * 功能: 获取用户详情
+     * 请求参数:
+     * - id(int, 必填): 路径参数，用户ID
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(object): 用户信息（字段同列表项，含部门与角色）
+     * 接口: GET /users/{id}
      */
     public function show($id)
     {
@@ -142,10 +168,24 @@ class UserController extends Controller
     }
 
     /**
-     * 创建用户
+     * 功能: 创建用户并分配角色
+     * 请求参数:
+     * - username(string, 必填): 用户名，唯一，<=50
+     * - password(string, 必填): 密码，长度>=6
+     * - real_name(string, 必填): 真实姓名，<=50
+     * - email(string, 可选): 邮箱，格式正确且唯一，<=100
+     * - phone(string, 可选): 电话，<=20
+     * - department_id(int, 可选): 部门ID，需存在
+     * - position(string, 可选): 职位，<=50
+     * - employee_no(string, 可选): 员工编号，唯一，<=50
+     * - role_ids(array<int>, 必填): 角色ID列表，需存在
+     * 返回参数:
+     * - JSON: {code, message}
+     * 接口: POST /users
      */
     public function store(Request $request)
     {
+        // 步骤说明：参数校验 -> 开启事务 -> 创建用户 -> 同步角色 -> 提交事务
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|max:50|unique:users,username',
             'password' => 'required|string|min:6',
@@ -218,10 +258,25 @@ class UserController extends Controller
     }
 
     /**
-     * 更新用户
+     * 功能: 更新用户信息并同步角色
+     * 请求参数:
+     * - id(int, 必填): 路径参数，用户ID
+     * - username(string, 必填): 用户名（当前ID除外唯一）
+     * - real_name(string, 必填): 真实姓名
+     * - email(string, 可选): 邮箱（当前ID除外唯一）
+     * - phone(string, 可选): 电话
+     * - department_id(int, 可选): 部门ID，需存在
+     * - position(string, 可选): 职位
+     * - employee_no(string, 可选): 员工编号（当前ID除外唯一）
+     * - status(int, 必填): 状态（0/1）
+     * - role_ids(array<int>, 必填): 角色ID列表
+     * 返回参数:
+     * - JSON: {code, message}
+     * 接口: PUT /users/{id}
      */
     public function update(Request $request, $id)
     {
+        // 步骤说明：检索用户 -> 参数校验 -> 开启事务 -> 更新信息与角色 -> 提交事务
         $user = User::find($id);
         if (!$user) {
             return json_fail('用户不存在');
@@ -282,10 +337,16 @@ class UserController extends Controller
     }
 
     /**
-     * 删除用户
+     * 功能: 删除指定用户（禁止删除自己）
+     * 请求参数:
+     * - id(int, 必填): 路径参数，用户ID
+     * 返回参数:
+     * - JSON: {code, message}
+     * 接口: DELETE /users/{id}
      */
     public function destroy(Request $request, $id)
     {
+        // 步骤说明：检索用户 -> 自身校验 -> 执行删除 -> 返回结果
         $user = User::find($id);
         if (!$user) {
             // 记录用户不存在日志
@@ -332,10 +393,17 @@ class UserController extends Controller
     }
 
     /**
-     * 重置密码
+     * 功能: 重置指定用户密码
+     * 请求参数:
+     * - id(int, 必填): 路径参数，用户ID
+     * - password(string, 必填): 新密码，长度>=6
+     * 返回参数:
+     * - JSON: {code, message}
+     * 接口: PUT /users/{id}/reset-password
      */
     public function resetPassword(Request $request, $id)
     {
+        // 步骤说明：检索用户 -> 校验新密码 -> 更新密码 -> 返回
         $user = User::find($id);
         if (!$user) {
             return json_fail('用户不存在');
@@ -365,10 +433,16 @@ class UserController extends Controller
     }
 
     /**
-     * 获取部门列表（用于下拉选择）
+     * 功能: 获取启用状态的部门列表（用于下拉选择）
+     * 请求参数: 无
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(array<object>): [{id, name}]
+     * 接口: GET /departments/simple
      */
     public function getDepartments()
     {
+        // 步骤说明：筛选启用部门 -> 排序 -> 选择字段 -> 返回
         try {
             $departments = Department::where('status', 1)
                 ->orderBy('sort_order')
@@ -381,7 +455,12 @@ class UserController extends Controller
     }
 
     /**
-     * 获取角色列表（用于下拉选择）
+     * 功能: 获取启用状态的角色列表（用于下拉选择）
+     * 请求参数: 无
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(array<object>): [{id, name, code}]
+     * 接口: 暂未在 routes/api.php 注册（当前有 RoleController@getAllRoles 对应 /roles/all）
      */
     public function getRoles()
     {
@@ -397,7 +476,13 @@ class UserController extends Controller
     }
 
     /**
-     * 获取用户角色
+     * 功能: 获取指定用户的角色信息及系统所有启用角色
+     * 请求参数:
+     * - id(int, 必填): 路径参数，用户ID
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(object): {user_roles(array), all_roles(array), user_role_ids(array<int>)}
+     * 接口: GET /users/{id}/roles
      */
     public function getUserRoles($id)
     {
@@ -421,7 +506,13 @@ class UserController extends Controller
     }
 
     /**
-     * 分配角色给用户
+     * 功能: 为指定用户分配角色（覆盖式同步）
+     * 请求参数:
+     * - id(int, 必填): 路径参数，用户ID
+     * - role_ids(array<int>, 必填): 角色ID列表
+     * 返回参数:
+     * - JSON: {code, message}
+     * 接口: POST /users/{id}/roles
      */
     public function assignRoles(Request $request, $id)
     {
@@ -451,7 +542,12 @@ class UserController extends Controller
     }
 
     /**
-     * 批量删除用户
+     * 功能: 批量删除用户（不可包含当前登录用户）
+     * 请求参数:
+     * - ids(array<int>, 必填): 待删除的用户ID列表
+     * 返回参数:
+     * - JSON: {code, message}
+     * 接口: POST /users/batch-delete
      */
     public function batchDelete(Request $request)
     {
@@ -481,10 +577,16 @@ class UserController extends Controller
     }
 
     /**
-     * 启用/禁用用户
+     * 功能: 切换指定用户的启用状态（1↔0），禁止操作自己
+     * 请求参数:
+     * - id(int, 必填): 路径参数，用户ID
+     * 返回参数:
+     * - JSON: {code, message}
+     * 接口: PUT /users/{id}/toggle-status
      */
     public function toggleStatus(Request $request, $id)
     {
+        // 步骤说明：检索用户 -> 自身校验 -> 计算新状态 -> 更新 -> 返回
         $user = User::find($id);
         if (!$user) {
             return json_fail('用户不存在');

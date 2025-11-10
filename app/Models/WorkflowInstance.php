@@ -6,18 +6,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * 工作流实例模型
+ * 表示工作流的具体运行实例，包含当前状态、进度等信息
+ */
 class WorkflowInstance extends Model
 {
     use SoftDeletes;
 
     protected $fillable = [
-        'workflow_id',
-        'business_id',
-        'business_type',
-        'business_title',
-        'current_node_index',
-        'status',
-        'created_by',
+        'workflow_id',          // 工作流ID
+        'business_id',          // 业务ID
+        'business_type',        // 业务类型(contract/case/payment)
+        'business_title',       // 业务标题
+        'current_node_index',   // 当前节点索引
+        'status',               // 状态(pending/completed/rejected/cancelled)
+        'created_by',           // 创建人ID
     ];
 
     protected $casts = [

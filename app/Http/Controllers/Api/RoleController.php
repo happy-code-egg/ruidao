@@ -9,10 +9,28 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 功能: 角色管理控制器，提供角色的增删改查、权限获取与分配、
+ *       以及角色下拉选项接口。仅补充注释，不修改业务逻辑或日志。
+ * 路由前缀: /api
+ * 权限限制: 大部分接口受 middleware: permission:system.role 控制；
+ *           其中 GET /api/roles/all 为公开测试路由。
+ */
 class RoleController extends Controller
 {
     /**
-     * 获取角色列表
+     * 功能: 获取角色列表（支持关键词搜索与分页）。
+     * 接口: GET /api/roles (route: api.roles.index)
+     * 请求参数:
+     * - keyword string 关键词（按角色名称/编码模糊匹配）
+     * - page int 当前页，默认 1
+     * - limit int 每页条数，默认 15，最大 100
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data.object: 分页数据（通过 json_page 返回）
+     * 内部说明:
+     * - 关联 creator/updater；统计启用用户数与权限数
+     * - 先 count 再 offset/limit 获取分页数据
      */
     public function index(Request $request)
     {
@@ -70,7 +88,13 @@ class RoleController extends Controller
     }
 
     /**
-     * 获取角色详情
+     * 功能: 获取角色详情，包含权限与关联用户。
+     * 接口: GET /api/roles/{id} (route: api.roles.show)
+     * 请求参数:
+     * - id int 路径参数，角色ID
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data.object: 角色详情（含 permissions 与 users），未找到返回失败提示
      */
     public function show($id)
     {
@@ -117,7 +141,18 @@ class RoleController extends Controller
     }
 
     /**
-     * 创建角色
+     * 功能: 创建角色并可选分配权限。
+     * 接口: POST /api/roles (route: api.roles.store)
+     * 请求参数:
+     * - role_code string 必填，唯一，最长 50
+     * - role_name string 必填，最长 100
+     * - description string 可选，最长 500
+     * - permission_ids array<int> 可选，权限ID列表
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data.object: 创建后的角色简要信息
+     * 内部说明:
+     * - 使用事务创建角色，并同步权限关联
      */
     public function store(Request $request)
     {
@@ -170,7 +205,18 @@ class RoleController extends Controller
     }
 
     /**
-     * 更新角色
+     * 功能: 更新角色基本信息与权限分配。
+     * 接口: PUT /api/roles/{id} (route: api.roles.update)
+     * 请求参数:
+     * - id int 路径参数，角色ID
+     * - role_code string 必填，唯一（排除当前ID），最长 50
+     * - role_name string 必填，最长 100
+     * - description string 可选，最长 500
+     * - permission_ids array<int> 可选，权限ID列表（不传表示不变，传空数组表示清空）
+     * 返回参数:
+     * - JSON: {code, message}
+     * 内部说明:
+     * - 使用事务更新角色，conditionally 同步权限
      */
     public function update(Request $request, $id)
     {
@@ -228,7 +274,14 @@ class RoleController extends Controller
     }
 
     /**
-     * 删除角色
+     * 功能: 删除角色（若有用户使用则禁止删除）。
+     * 接口: DELETE /api/roles/{id} (route: api.roles.destroy)
+     * 请求参数:
+     * - id int 路径参数，角色ID
+     * 返回参数:
+     * - JSON: {code, message}
+     * 内部说明:
+     * - 事务中先清理权限关联，再删除角色
      */
     public function destroy(Request $request, $id)
     {
@@ -268,7 +321,15 @@ class RoleController extends Controller
     }
 
     /**
-     * 获取角色权限
+     * 功能: 获取指定角色的权限树与已勾选权限ID。
+     * 接口: GET /api/roles/{id}/permissions (route: api.roles.permissions)
+     * 请求参数:
+     * - id int 路径参数，角色ID
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data.object: {permissions: 权限树, checked_ids: 已选权限ID数组}
+     * 内部说明:
+     * - 权限树通过 buildPermissionTree 构建（按 parent_id 递归）
      */
     public function getPermissions($id)
     {
@@ -305,7 +366,15 @@ class RoleController extends Controller
     }
 
     /**
-     * 分配权限给角色
+     * 功能: 为角色分配权限（覆盖式同步）。
+     * 接口: POST /api/roles/{id}/permissions (route: api.roles.assign.permissions)
+     * 请求参数:
+     * - id int 路径参数，角色ID
+     * - permission_ids array<int> 必填，权限ID列表
+     * 返回参数:
+     * - JSON: {code, message}
+     * 内部说明:
+     * - 使用 sync 同步角色权限（替换现有权限集）
      */
     public function assignPermissions(Request $request, $id)
     {
@@ -342,7 +411,12 @@ class RoleController extends Controller
     }
 
     /**
-     * 获取所有角色（用于下拉选择）
+     * 功能: 获取所有角色（下拉选项）。
+     * 接口: GET /api/roles/all (route: api.roles.all)
+     * 请求参数: 无
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data.array<object>: [{id, name, code}]
      */
     public function getAllRoles()
     {
@@ -364,7 +438,13 @@ class RoleController extends Controller
     }
 
     /**
-     * 构建权限树（用于权限分配）
+     * 功能: 构建权限树（递归，根据 parent_id 组织层级）。
+     * 调用方: getPermissions
+     * 参数说明:
+     * - permissions 集合 所有权限记录
+     * - checkedIds array<int> 已选中的权限ID
+     * - parentId int 当前遍历的父节点ID，默认 0
+     * 返回: array 树形结构节点数组
      */
     private function buildPermissionTree($permissions, $checkedIds = [], $parentId = 0)
     {

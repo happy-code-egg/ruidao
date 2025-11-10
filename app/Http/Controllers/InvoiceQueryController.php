@@ -8,10 +8,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * 发票查询控制器
+ * 处理发票的查询、统计、下载等操作
+ */
 class InvoiceQueryController extends Controller
 {
     /**
      * 获取发票查询列表
+     * @param Request $request 包含搜索条件的请求对象
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的查询结果，包含分页信息和发票列表
      */
     public function index(Request $request)
     {
@@ -114,6 +120,8 @@ class InvoiceQueryController extends Controller
 
     /**
      * 获取发票查询统计
+     * @param Request $request 包含查询条件的请求对象
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的统计数据，包含合同总额、实际到款总额、已开票总额等信息
      */
     public function statistics(Request $request)
     {
@@ -172,6 +180,8 @@ class InvoiceQueryController extends Controller
 
     /**
      * 下载发票
+     * @param int $id 发票申请ID
+     * @return \Symfony\Component\HttpFoundation\Response 返回发票文件的响应
      */
     public function download($id)
     {
@@ -206,6 +216,8 @@ class InvoiceQueryController extends Controller
 
     /**
      * 获取下载记录
+     * @param int $id 发票申请ID
+     * @return \Illuminate\Http\JsonResponse 返回JSON格式的下载记录列表
      */
     public function downloadRecords($id)
     {
@@ -241,6 +253,8 @@ class InvoiceQueryController extends Controller
 
     /**
      * 导出发票列表
+     * @param Request $request 包含导出条件的请求对象
+     * @return \Symfony\Component\HttpFoundation\Response 返回Excel文件的响应
      */
     public function export(Request $request)
     {

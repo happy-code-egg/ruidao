@@ -10,10 +10,24 @@ use Illuminate\Support\Facades\Validator;
 class TechServiceRegionsController extends Controller
 {
     /**
-     * 获取科技服务地区列表
+     * 功能: 获取科技服务地区列表，支持多条件筛选与分页
+     * 请求参数:
+     * - apply_type(string, 可选): 申请类型精确筛选
+     * - service_name(string, 可选): 科技服务名称模糊匹配
+     * - main_area(string, 可选): 主管地模糊匹配
+     * - project_year(string, 可选): 项目年份精确筛选
+     * - status(int, 可选): 状态筛选（0=禁用，1=启用）
+     * - keyword(string, 可选): 关键词匹配名称/主管地/年份/描述
+     * - page(int, 可选): 页码，默认1
+     * - limit(int, 可选): 每页数量，默认20
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(object): {list(array<object>), total(int), page(int), limit(int)}
+     * 接口: GET /data-config/tech-service-regions
      */
     public function index(Request $request)
     {
+        // 步骤说明：解析筛选条件 -> 构建查询条件 -> 统计总数 -> 有序分页查询 -> 返回统一结构
         try {
             $query = TechServiceRegion::query();
 
@@ -76,10 +90,17 @@ class TechServiceRegionsController extends Controller
     }
 
     /**
-     * 获取树形结构数据
+     * 功能: 获取启用状态的科技服务地区树形数据（三级：申请类型→服务名称→地区记录）
+     * 请求参数:
+     * - keyword(string, 可选): 关键词匹配服务名称/主管地/项目年份
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(array<object>): 树形节点数组，节点含 {id,label,level,type,children,...}
+     * 接口: GET /data-config/tech-service-regions/tree
      */
     public function getTreeData(Request $request)
     {
+        // 步骤说明：查询启用记录 -> 关键词筛选 -> 构建分组 -> 生成层级树 -> 返回结果
         try {
             $query = TechServiceRegion::enabled();
 
@@ -161,7 +182,22 @@ class TechServiceRegionsController extends Controller
     }
 
     /**
-     * 创建科技服务地区
+     * 功能: 创建科技服务地区记录
+     * 请求参数:
+     * - apply_type(string, 必填): 申请类型，<=100
+     * - service_name(string, 必填): 科技服务名称，<=200
+     * - main_area(string, 必填): 主管地，<=100
+     * - project_year(string, 必填): 项目年份，<=10
+     * - service_level(string, 可选): 服务层级，<=50
+     * - deadline(date, 可选): 截止日期
+     * - batch_number(int, 可选): 批次号，>=1
+     * - is_valid(bool, 可选): 是否有效，默认 true
+     * - sort_order(int, 可选): 排序，>=1，默认1
+     * - description(string, 可选): 描述
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(object): 创建成功的记录
+     * 接口: POST /data-config/tech-service-regions
      */
     public function store(Request $request)
     {
@@ -200,7 +236,13 @@ class TechServiceRegionsController extends Controller
     }
 
     /**
-     * 获取科技服务地区详情
+     * 功能: 获取科技服务地区详情
+     * 请求参数:
+     * - id(int, 必填): 路径参数，记录ID
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(object): 记录详情
+     * 接口: GET /data-config/tech-service-regions/{id}
      */
     public function show($id)
     {
@@ -214,7 +256,14 @@ class TechServiceRegionsController extends Controller
     }
 
     /**
-     * 更新科技服务地区
+     * 功能: 更新科技服务地区记录
+     * 请求参数:
+     * - id(int, 必填): 路径参数，记录ID
+     * - 其余字段同创建接口，均为可选
+     * 返回参数:
+     * - JSON: {code, message, data}
+     * - data(object): 更新后的记录
+     * 接口: PUT /data-config/tech-service-regions/{id}
      */
     public function update(Request $request, $id)
     {
@@ -251,10 +300,16 @@ class TechServiceRegionsController extends Controller
     }
 
     /**
-     * 删除科技服务地区
+     * 功能: 删除科技服务地区记录（存在关联处理事项时禁止删除）
+     * 请求参数:
+     * - id(int, 必填): 路径参数，记录ID
+     * 返回参数:
+     * - JSON: {code, message}
+     * 接口: DELETE /data-config/tech-service-regions/{id}
      */
     public function destroy($id)
     {
+        // 步骤说明：检索记录 -> 统计关联事项 -> 条件限制删除 -> 执行删除 -> 返回结果
         try {
             $region = TechServiceRegion::findOrFail($id);
             

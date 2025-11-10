@@ -4,38 +4,47 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 案例费用模型
+ * 管理案例相关的各类费用信息，包括费用类型、金额、支付状态等
+ */
 class CaseFee extends Model
 {
+    // 指定对应的数据库表名
     protected $table = 'case_fees';
 
+    // 允许批量赋值的字段列表
     protected $fillable = [
-        'case_id',
-        'fee_type',
-        'fee_name',
-        'fee_description',
-        'amount',
-        'currency',
-        'payment_deadline',
-        'receivable_date',
-        'actual_receive_date',
-        'payment_status',
-        'is_reduction',
-        'remarks',
+        'case_id',              // 案例ID
+        'fee_type',             // 费用类型
+        'fee_name',             // 费用名称
+        'fee_description',      // 费用描述
+        'amount',               // 金额
+        'currency',             // 货币类型
+        'payment_deadline',     // 缴费截止日期
+        'receivable_date',      // 应收日期
+        'actual_receive_date',  // 实际收款日期
+        'payment_status',       // 支付状态
+        'is_reduction',         // 是否减免(布尔值)
+        'remarks',              // 备注
     ];
 
+    // 字段类型转换定义
     protected $casts = [
-        'case_id' => 'integer',
-        'amount' => 'decimal:2',
-        'payment_deadline' => 'date',
-        'receivable_date' => 'date',
-        'actual_receive_date' => 'date',
-        'is_reduction' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'case_id' => 'integer',             // 案例ID - 整数类型
+        'amount' => 'decimal:2',            // 金额 - 精确到小数点后2位的十进制数
+        'payment_deadline' => 'date',       // 缴费截止日期 - 日期类型
+        'receivable_date' => 'date',        // 应收日期 - 日期类型
+        'actual_receive_date' => 'date',    // 实际收款日期 - 日期类型
+        'is_reduction' => 'boolean',        // 是否减免 - 布尔类型
+        'created_at' => 'datetime',         // 创建时间 - 日期时间类型
+        'updated_at' => 'datetime',         // 更新时间 - 日期时间类型
     ];
 
     /**
      * 获取关联的案例
+     * 建立与 `Cases` 模型的一对多反向关联
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function case()
     {
@@ -45,12 +54,12 @@ class CaseFee extends Model
     /**
      * 费用类型常量
      */
-    const TYPE_APPLICATION = 'application';  // 申请费
-    const TYPE_EXAMINATION = 'examination';  // 审查费
-    const TYPE_ANNUAL = 'annual';           // 年费
+    const TYPE_APPLICATION = 'application';   // 申请费
+    const TYPE_EXAMINATION = 'examination';   // 审查费
+    const TYPE_ANNUAL = 'annual';            // 年费
     const TYPE_REGISTRATION = 'registration'; // 登记费
-    const TYPE_SERVICE = 'service';         // 服务费
-    const TYPE_OFFICIAL = 'official';       // 官费
+    const TYPE_SERVICE = 'service';          // 服务费
+    const TYPE_OFFICIAL = 'official';        // 官费
 
     /**
      * 支付状态常量
@@ -61,6 +70,8 @@ class CaseFee extends Model
 
     /**
      * 获取费用类型文本
+     * 根据 `fee_type` 字段值返回对应的中文费用类型描述
+     * @return string 费用类型文本
      */
     public function getTypeTextAttribute()
     {
@@ -78,6 +89,8 @@ class CaseFee extends Model
 
     /**
      * 获取支付状态文本
+     * 根据 `payment_status` 字段值返回对应的中文支付状态描述
+     * @return string 支付状态文本
      */
     public function getPaymentStatusTextAttribute()
     {
@@ -92,15 +105,17 @@ class CaseFee extends Model
 
     /**
      * 检查是否逾期
+     * 判断当前费用是否已经超过缴费截止日期且未支付
+     * @return boolean 是否逾期
      */
     public function isOverdue()
     {
+        // 如果没有设置缴费截止日期或者已经支付，则不逾期
         if (!$this->payment_deadline || $this->payment_status === self::STATUS_PAID) {
             return false;
         }
 
+        // 比较缴费截止日期与当前日期，判断是否逾期
         return $this->payment_deadline < now()->toDateString();
     }
 }
-
-

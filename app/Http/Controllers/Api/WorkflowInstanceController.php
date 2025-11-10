@@ -12,17 +12,38 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * 工作流实例控制器
+ * 负责工作流实例的启动、查询、处理和管理
+ */
 class WorkflowInstanceController extends Controller
 {
     protected $workflowService;
 
+    /**
+     * 功能: 构造函数，注入工作流服务
+     * 请求参数: 无
+     * 返回参数: 无
+     * 接口: 无接口
+     */
     public function __construct(WorkflowService $workflowService)
     {
         $this->workflowService = $workflowService;
     }
 
     /**
-     * 启动工作流
+     * 功能: 启动工作流，支持自动选择与预分配处理人
+     * 请求参数:
+     * - business_type(string, 必填): 业务类型，例如 case
+     * - business_id(int, 必填): 业务ID
+     * - business_title(string, 必填): 业务标题
+     * - workflow_id(int, 可选): 工作流ID，存在于 workflows 表
+     * - assignees(array<int>, 可选): 预分配处理人用户ID列表
+     * 返回参数:
+     * - code(int): 0成功，400参数错误，500服务异常
+     * - msg(string): 提示信息
+     * - data(object): 工作流实例信息
+     * 接口: POST /workflow-instances/start
      */
     public function start(Request $request)
     {
@@ -42,6 +63,7 @@ class WorkflowInstanceController extends Controller
         }
 
         try {
+            // 步骤说明：参数校验 -> 自动选择工作流（案件类型） -> 启动（可带预分配） -> 更新案件状态 -> 返回结果
             $workflowId = $request->workflow_id;
             
             // 如果没有提供workflow_id，对于case类型自动选择工作流
@@ -104,7 +126,14 @@ class WorkflowInstanceController extends Controller
     }
 
     /**
-     * 获取工作流实例详情
+     * 功能: 获取工作流实例详情
+     * 请求参数:
+     * - id(int, 必填): 路径参数，工作流实例ID
+     * 返回参数:
+     * - code(int): 0成功，404不存在
+     * - msg(string): 提示信息
+     * - data(object): 工作流实例及关联数据（workflow, creator, processes.assignee, processes.processor）
+     * 接口: GET /workflow-instances/{id}
      */
     public function show($id)
     {
@@ -131,7 +160,17 @@ class WorkflowInstanceController extends Controller
     }
 
     /**
-     * 处理工作流节点
+     * 功能: 处理工作流节点，支持审批/驳回/退回
+     * 请求参数:
+     * - processId(int, 必填): 路径参数，节点ID
+     * - action(string, 必填): 操作类型，approve|reject|back
+     * - comment(string, 可选): 处理意见
+     * - back_to_node_index(int, 条件必填): 退回操作时指定退回节点索引
+     * 返回参数:
+     * - code(int): 0成功，400参数错误，500服务异常
+     * - msg(string): 提示信息
+     * - data(object): 处理后的节点信息
+     * 接口: POST /workflow-instances/process/{processId}
      */
     public function process(Request $request, $processId)
     {
@@ -159,6 +198,7 @@ class WorkflowInstanceController extends Controller
         }
 
         try {
+            // 步骤说明：校验动作类型与退回节点 -> 调用服务处理节点 -> 返回处理结果
             $process = $this->workflowService->processNode(
                 $processId,
                 $request->action,
@@ -182,7 +222,13 @@ class WorkflowInstanceController extends Controller
     }
 
     /**
-     * 获取我的待处理任务
+     * 功能: 获取当前用户的待处理任务列表
+     * 请求参数: 无
+     * 返回参数:
+     * - code(int): 0成功，500服务异常
+     * - msg(string): 提示信息
+     * - data(array): 待处理任务列表
+     * 接口: GET /workflow-instances/my-tasks
      */
     public function myTasks()
     {
@@ -204,7 +250,15 @@ class WorkflowInstanceController extends Controller
     }
 
     /**
-     * 获取业务的工作流状态
+     * 功能: 查询指定业务的工作流状态
+     * 请求参数:
+     * - business_type(string, 必填): 业务类型
+     * - business_id(int, 必填): 业务ID
+     * 返回参数:
+     * - code(int): 0成功，400参数错误，404不存在，500服务异常
+     * - msg(string): 提示信息
+     * - data(object|null): 业务对应的工作流实例状态
+     * 接口: GET /workflow-instances/business-status
      */
     public function businessStatus(Request $request)
     {
@@ -250,7 +304,14 @@ class WorkflowInstanceController extends Controller
     }
 
     /**
-     * 取消工作流
+     * 功能: 取消指定工作流实例
+     * 请求参数:
+     * - instanceId(int, 必填): 路径参数，工作流实例ID
+     * 返回参数:
+     * - code(int): 0成功，500服务异常
+     * - msg(string): 提示信息
+     * - data(object): 取消后的工作流实例
+     * 接口: PUT /workflow-instances/{instanceId}/cancel
      */
     public function cancel($instanceId)
     {
@@ -272,7 +333,14 @@ class WorkflowInstanceController extends Controller
     }
 
     /**
-     * 获取工作流处理历史
+     * 功能: 获取指定工作流的处理历史
+     * 请求参数:
+     * - instanceId(int, 必填): 路径参数，工作流实例ID
+     * 返回参数:
+     * - code(int): 0成功，500服务异常
+     * - msg(string): 提示信息
+     * - data(array): 处理历史列表
+     * 接口: GET /workflow-instances/{instanceId}/history
      */
     public function history($instanceId)
     {
@@ -297,7 +365,14 @@ class WorkflowInstanceController extends Controller
     }
 
     /**
-     * 获取可退回的节点列表
+     * 功能: 获取当前节点之前已处理的可退回节点列表
+     * 请求参数:
+     * - instanceId(int, 必填): 路径参数，工作流实例ID
+     * 返回参数:
+     * - code(int): 0成功，500服务异常
+     * - msg(string): 提示信息
+     * - data(array): 可退回节点信息（index, name, type, processed_at, processor）
+     * 接口: GET /workflow-instances/{instanceId}/backable-nodes
      */
     public function getBackableNodes($instanceId)
     {
@@ -311,6 +386,7 @@ class WorkflowInstanceController extends Controller
             // 获取可退回的节点（当前节点之前的已处理节点）
             $backableNodes = [];
             for ($i = 0; $i < $currentIndex; $i++) {
+                // 计算可退回节点：遍历当前节点之前的已处理节点，汇总基本信息
                 $process = $instance->processes->where('node_index', $i)->first();
                 if ($process && $process->isProcessed()) {
                     $backableNodes[] = [
@@ -338,7 +414,13 @@ class WorkflowInstanceController extends Controller
     }
 
     /**
-     * 获取可分配的用户列表
+     * 功能: 获取可分配的用户列表（按部门与姓名排序）
+     * 请求参数: 无
+     * 返回参数:
+     * - code(int): 0成功，500服务异常
+     * - msg(string): 提示信息
+     * - data(array): 用户列表（id, real_name, username, position, department）
+     * 接口: GET /workflow-instances/assignable-users
      */
     public function getAssignableUsers()
     {
@@ -365,10 +447,16 @@ class WorkflowInstanceController extends Controller
     }
     
     /**
-     * 为案例自动选择工作流
+     * 功能: 根据案件类型自动选择合适的工作流
+     * 请求参数:
+     * - caseId(int, 必填): 案件ID
+     * 返回参数:
+     * - workflowId(int|null): 找到的工作流ID，未找到返回null
+     * 接口: 无接口
      */
     private function autoSelectWorkflowForCase($caseId)
     {
+        // 步骤说明：查询案件 -> 按类型选择工作流代码 -> 查询工作流 -> 返回ID或null
         try {
             $case = \App\Models\Cases::find($caseId);
             if (!$case) {

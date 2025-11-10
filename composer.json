@@ -24,6 +24,7 @@
         "laravel/sanctum": "^2.6",
         "laravel/tinker": "^2.0",
         "maatwebsite/excel": "^3.1",
+        "maennchen/zipstream-php": "3.1.*",
         "mrgoon/aliyun-sms": "dev-master",
         "nesbot/carbon": "^2.55",
         "qiniu/php-sdk": "^7.3",
@@ -40,7 +41,10 @@
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
-        "sort-packages": true
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2.0"
+        }
     },
     "extra": {
         "laravel": {

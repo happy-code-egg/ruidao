@@ -9,10 +9,54 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 代理人控制器
+ * 负责处理代理人信息的增删改查、状态管理等功能
+ */
 class AgentController extends Controller
 {
     /**
-     * 获取代理师列表
+    获取代理师列表
+    请求参数：
+    name（姓名）：可选，字符串，用于模糊搜索代理师中文姓名或英文姓名
+    licenseNumber（执业证号）：可选，字符串，用于模糊搜索代理师执业证号
+    agency（所属机构）：可选，字符串，用于模糊搜索代理师所属机构
+    page（页码）：可选，整数，默认 1，分页查询的页码
+    pageSize（每页条数）：可选，整数，默认 10，分页查询的每页记录数
+    返回参数：
+    code：整数，200 表示成功，500 表示失败
+    message：字符串，操作结果描述
+    data：对象，包含列表数据及分页信息
+    list：数组，代理师列表，每个元素包含以下字段：
+    id：整数，代理师 ID
+    sort：整数，排序值
+    nameCn：字符串，中文姓名
+    nameEn：字符串，英文姓名
+    lastNameCn：字符串，中文姓氏
+    firstNameCn：字符串，中文名字
+    lastNameEn：字符串，英文姓氏
+    firstNameEn：字符串，英文名字
+    licenseNumber：字符串，执业证号
+    qualificationNumber：字符串，资格证号
+    licenseDate：日期，领证日期
+    phone：字符串，联系电话
+    email：字符串，电子邮箱
+    agency：字符串，所属机构
+    gender：字符串，性别
+    licenseExpiry：日期，执业证有效期
+    specialty：字符串，专业领域
+    isDefaultAgent：布尔值，是否为默认代理师
+    isValid：布尔值，是否有效
+    creditRating：字符串，信用评级
+    creator：字符串，创建人
+    creationTime：时间戳，创建时间
+    modifier：字符串，修改人
+    updateTime：时间戳，更新时间
+    total：整数，符合条件的总记录数
+    page：整数，当前页码
+    pageSize：整数，当前每页条数
+    @param Request $request 请求对象
+    @return \Illuminate\Http\JsonResponse JSON 响应
      */
     public function index(Request $request)
     {
@@ -96,7 +140,33 @@ class AgentController extends Controller
     }
 
     /**
-     * 创建代理师
+    创建代理师
+    请求参数：
+    sort（排序值）：必填，整数，最小值 1，用于列表排序
+    nameCn（中文姓名）：必填，字符串，最大 100 字符
+    nameEn（英文姓名）：可选，字符串，最大 100 字符
+    lastNameCn（中文姓氏）：可选，字符串，最大 50 字符
+    firstNameCn（中文名字）：可选，字符串，最大 50 字符
+    lastNameEn（英文姓氏）：可选，字符串，最大 50 字符
+    firstNameEn（英文名字）：可选，字符串，最大 50 字符
+    licenseNumber（执业证号）：必填，字符串，最大 100 字符，需唯一
+    qualificationNumber（资格证号）：必填，字符串，最大 100 字符，需唯一
+    licenseDate（领证日期）：可选，日期格式
+    agency（所属机构）：必填，字符串，最大 200 字符
+    phone（联系电话）：可选，字符串，最大 50 字符
+    email（电子邮箱）：可选，邮箱格式，最大 255 字符
+    licenseExpiry（执业证有效期）：可选，日期格式
+    specialty（专业领域）：可选，字符串，最大 255 字符
+    isDefaultAgent（是否为默认代理师）：可选，布尔值，默认 false
+    isValid（是否有效）：可选，布尔值，默认 true
+    creditRating（信用评级）：可选，字符串，最大 50 字符
+    gender（性别）：可选，字符串，默认 "男"
+    返回参数：
+    code：整数，200 表示成功，400 表示参数错误，500 表示失败
+    message：字符串，操作结果描述
+    data：对象，创建成功时返回代理师详情（含自动填充的 status、creator、creation_time、created_by 等字段）
+    @param Request $request 请求对象
+    @return \Illuminate\Http\JsonResponse JSON 响应
      */
     public function store(Request $request)
     {
@@ -185,13 +255,38 @@ class AgentController extends Controller
     }
 
     /**
-     * 获取代理师详情
+    获取代理师详情
+    功能说明：
+    根据代理师 ID 查询完整详情，包含基本信息、资质信息、联系信息等核心字段
+    校验代理师存在性，不存在返回 404 提示，异常时返回具体错误信息
+    请求参数：
+    id（代理师 ID）：必填，整数，代理师的唯一标识 ID（通过 URL 路径传入）
+    核心逻辑：
+    数据查询：通过 Agent 模型查询指定 ID 的代理师记录
+    存在性校验：查询结果为空时，返回 404 状态码和 “代理师不存在” 提示
+    数据格式化：将模型字段映射为前端友好的字段名（如下划线转驼峰），整合所有核心信息
+    响应返回：返回标准化 JSON 响应，包含状态码、提示信息和格式化后的详情数据
+    返回参数：
+    code：整数，状态码（200 = 成功，404 = 代理师不存在，500 = 服务器错误）
+    message：字符串，返回 “获取成功”“代理师不存在” 或 “获取代理师详情失败 + 具体错误信息”
+    data：对象，代理师详情，包含以下字段：
+    基础标识：id（ID）、sort（排序号）
+    姓名信息：nameCn（中文全名）、nameEn（英文全名）、lastNameCn（中文姓）、firstNameCn（中文名）、lastNameEn（英文姓）、firstNameEn（英文名）
+    资质信息：licenseNumber（执业证号）、qualificationNumber（资格证号）、licenseDate（领证日期）、licenseExpiry（执业证有效期）、specialty（专业领域）、creditRating（信用等级）
+    联系信息：phone（电话）、email（邮箱）、agency（所属机构）
+    基础属性：gender（性别）、isDefaultAgent（是否默认代理师）、isValid（是否有效）
+    操作信息：creator（创建人）、creationTime（创建时间）、modifier（修改人）、updateTime（更新时间）
+    依赖说明：
+    依赖 Agent 模型，需确保模型字段（name_cn、license_number 等）与数据库表一致
+    字段映射规则：数据库下划线命名（如 name_cn）转为前端驼峰命名（nameCn），适配前端数据处理习惯
+    @param int $id 代理师 ID
+    @return \Illuminate\Http\JsonResponse 代理师详情响应
      */
     public function show($id)
     {
         try {
             $agent = Agent::find($id);
-            
+
             if (!$agent) {
                 return response()->json([
                     'code' => 404,
@@ -238,9 +333,36 @@ class AgentController extends Controller
             ]);
         }
     }
-
     /**
-     * 更新代理师
+    更新代理师
+    请求参数：
+    id（代理师 ID）：必填，整数，代理师的唯一标识（通过 URL 路径传递）
+    sort（排序值）：必填，整数，最小值 1，用于列表排序
+    nameCn（中文姓名）：必填，字符串，最大 100 字符
+    nameEn（英文姓名）：可选，字符串，最大 100 字符
+    lastNameCn（中文姓氏）：可选，字符串，最大 50 字符
+    firstNameCn（中文名字）：可选，字符串，最大 50 字符
+    lastNameEn（英文姓氏）：可选，字符串，最大 50 字符
+    firstNameEn（英文名字）：可选，字符串，最大 50 字符
+    licenseNumber（执业证号）：必填，字符串，最大 100 字符，需唯一（排除当前代理师 ID）
+    qualificationNumber（资格证号）：必填，字符串，最大 100 字符，需唯一（排除当前代理师 ID）
+    licenseDate（领证日期）：可选，日期格式
+    agency（所属机构）：必填，字符串，最大 200 字符
+    phone（联系电话）：可选，字符串，最大 50 字符
+    email（电子邮箱）：可选，邮箱格式，最大 255 字符
+    licenseExpiry（执业证有效期）：可选，日期格式
+    specialty（专业领域）：可选，字符串，最大 255 字符
+    isDefaultAgent（是否为默认代理师）：可选，布尔值，默认 false
+    isValid（是否有效）：可选，布尔值，默认 true
+    creditRating（信用评级）：可选，字符串，最大 50 字符
+    gender（性别）：可选，字符串，默认 "男"
+    返回参数：
+    code：整数，200 表示成功，400 表示参数错误，404 表示代理师不存在，500 表示失败
+    message：字符串，操作结果描述
+    data：对象，更新成功时返回更新后的代理师详情（含自动填充的 modifier、update_time、updated_by 等字段）
+    @param Request $request 请求对象
+    @param int $id 代理师 ID
+    @return \Illuminate\Http\JsonResponse JSON 响应
      */
     public function update(Request $request, $id)
     {
@@ -285,9 +407,9 @@ class AgentController extends Controller
 
         try {
             DB::beginTransaction();
-            
+
             $agent = Agent::find($id);
-            
+
             if (!$agent) {
                 return response()->json([
                     'code' => 404,
@@ -337,13 +459,20 @@ class AgentController extends Controller
     }
 
     /**
-     * 删除代理师
+    删除代理师
+    请求参数：
+    id（代理师 ID）：必填，整数，代理师的唯一标识（通过 URL 路径传递）
+    返回参数：
+    code：整数，200 表示成功，404 表示代理师不存在，500 表示失败
+    message：字符串，操作结果描述
+    @param int $id 代理师 ID
+    @return \Illuminate\Http\JsonResponse JSON 响应
      */
     public function destroy($id)
     {
         try {
             $agent = Agent::find($id);
-            
+
             if (!$agent) {
                 return response()->json([
                     'code' => 404,
@@ -366,7 +495,16 @@ class AgentController extends Controller
     }
 
     /**
-     * 获取代理机构选项
+    获取代理机构选项列表
+    请求参数：无
+    返回参数：
+    code：整数，200 表示成功，500 表示失败
+    message：字符串，操作结果描述
+    data：数组，有效代理机构选项列表，每个元素包含：
+    value：整数，代理机构 ID（用于业务关联逻辑）
+    label：字符串，代理机构中文名称（用于前端展示）
+    说明：仅返回状态为 “有效”（is_valid=true）的代理机构，按排序值和 ID 升序排列
+    @return \Illuminate\Http\JsonResponse JSON 响应
      */
     public function getAgencies()
     {

@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Models\Cities;
 use App\Models\User;
 
+/**
+ * 城市控制器
+ * 负责处理城市信息的增删改查、状态管理等功能
+ */
 class CitiesController extends BaseDataConfigController
 {
     /**

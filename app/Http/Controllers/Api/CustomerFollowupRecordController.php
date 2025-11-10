@@ -338,7 +338,6 @@ class CustomerFollowupRecordController extends Controller
                 'message' => '创建成功',
                 'data' => $record
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

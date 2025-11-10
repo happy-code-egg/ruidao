@@ -13,10 +13,65 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * 请款单控制器
+ * 
+ * 功能描述：负责管理请款单的创建、查询、编辑、提交审核等操作
+ * 
+ * 主要功能：
+ * - 获取请款单列表（支持搜索、筛选和分页）
+ * - 获取请款单详情
+ * - 创建新的请款单
+ * - 更新请款单信息
+ * - 删除请款单
+ * - 提交请款单审核
+ * - 撤回请款单
+ * - 审核请款单
+ * - 导出请款单数据
+ * - 获取请款单统计数据
+ */
 class PaymentRequestController extends Controller
 {
     /**
-     * 获取请款单列表
+     * 获取请款单列表 index
+     * 
+     * 功能描述：获取请款单列表，支持状态筛选、搜索和分页
+     * 
+     * 传入参数：
+     * - request (Request): HTTP请求对象
+     *   - status (int, optional): 状态筛选
+     *   - requestNo (string, optional): 请款单号搜索
+     *   - customerId (int, optional): 客户ID筛选
+     *   - customerName (string, optional): 客户名称搜索
+     *   - contractNo (string, optional): 合同号搜索
+     *   - creator (string, optional): 创建人搜索
+     *   - startDate (string, optional): 创建时间开始范围
+     *   - endDate (string, optional): 创建时间结束范围
+     *   - minAmount (float, optional): 最小金额筛选
+     *   - maxAmount (float, optional): 最大金额筛选
+     *   - page (int, optional): 页码，默认为1
+     *   - pageSize (int, optional): 每页数量，默认为10
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
+     * - data (object): 分页数据
+     *   - list (array): 请款单列表数据
+     *     - id (int): ID
+     *     - requestNo (string): 请款单号
+     *     - customerName (string): 客户名称
+     *     - contractNo (string): 合同号
+     *     - totalAmount (float): 总金额
+     *     - officialFee (float): 官费总额
+     *     - serviceFee (float): 服务费总额
+     *     - status (int): 状态
+     *     - statusText (string): 状态文本
+     *     - creator (string): 创建人
+     *     - createdAt (string): 创建时间
+     *     - remark (string): 备注
+     *   - total (int): 总记录数
+     *   - page (int): 当前页码
+     *   - pageSize (int): 每页数量
      */
     public function index(Request $request)
     {
@@ -117,7 +172,42 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 获取请款单详情
+     * 获取请款单详情 show
+     * 
+     * 功能描述：根据ID获取请款单的详细信息，包括关联的客户、合同和费用明细
+     * 
+     * 传入参数：
+     * - id (int): 请款单ID
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
+     * - data (object): 请款单详情数据
+     *   - id (int): ID
+     *   - requestNo (string): 请款单号
+     *   - customerName (string): 客户名称
+     *   - customerId (int): 客户ID
+     *   - contractNo (string): 合同号
+     *   - contractId (int): 合同ID
+     *   - totalAmount (float): 总金额
+     *   - status (int): 状态
+     *   - statusText (string): 状态文本
+     *   - creator (string): 创建人
+     *   - createdAt (string): 创建时间
+     *   - remark (string): 备注
+     *   - details (array): 请款明细列表
+     *     - id (int): 明细ID
+     *     - caseId (int): 案件ID
+     *     - caseFeeId (int): 案件费用ID
+     *     - ourRef (string): 我方编号
+     *     - applicationNo (string): 申请号
+     *     - caseName (string): 案件名称
+     *     - caseType (string): 案件类型
+     *     - feeType (string): 费用类型
+     *     - feeName (string): 费用名称
+     *     - amount (float): 金额
+     *     - currency (string): 币种
+     *     - invoiceNumber (string): 发票号码
      */
     public function show($id)
     {
@@ -168,7 +258,22 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 创建请款单
+     * 创建请款单 store
+     * 
+     * 功能描述：创建新的请款单，包括基本信息和费用明细
+     * 
+     * 传入参数：
+     * - request (Request): HTTP请求对象
+     *   - customer_id (int): 客户ID，必填，必须存在
+     *   - contract_id (int, optional): 合同ID，可为空，必须存在
+     *   - fee_ids (array): 费用ID数组，必填，至少包含一个元素，每个元素必须存在
+     *   - remark (string, optional): 备注
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
+     * - data (object): 创建结果数据
+     *   - id (int): 新创建的请款单ID
      */
     public function store(Request $request)
     {
@@ -234,7 +339,21 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 更新请款单
+     * 更新请款单 update
+     * 
+     * 功能描述：更新请款单信息，仅允许更新草稿状态的请款单
+     * 
+     * 传入参数：
+     * - request (Request): HTTP请求对象
+     *   - customer_id (int, optional): 客户ID
+     *   - contract_id (int, optional): 合同ID
+     *   - fee_ids (array, optional): 费用ID数组
+     *   - remark (string, optional): 备注
+     * - id (int): 请款单ID
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
      */
     public function update(Request $request, $id)
     {
@@ -294,7 +413,16 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 删除请款单
+     * 删除请款单 destroy
+     * 
+     * 功能描述：删除请款单，仅允许删除草稿状态的请款单
+     * 
+     * 传入参数：
+     * - id (int): 请款单ID
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
      */
     public function destroy($id)
     {
@@ -326,7 +454,16 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 提交审核
+     * 提交审核 submit
+     * 
+     * 功能描述：提交请款单进行审核，仅允许提交草稿状态的请款单
+     * 
+     * 传入参数：
+     * - id (int): 请款单ID
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
      */
     public function submit($id)
     {
@@ -358,7 +495,16 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 撤回请款单
+     * 撤回请款单 withdraw
+     * 
+     * 功能描述：撤回已提交的请款单，仅允许撤回待审核状态的请款单
+     * 
+     * 传入参数：
+     * - id (int): 请款单ID
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
      */
     public function withdraw($id)
     {
@@ -384,7 +530,19 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 审核请款单
+     * 审核请款单 approve
+     * 
+     * 功能描述：审核请款单，可选择通过或退回，仅允许审核待审核状态的请款单
+     * 
+     * 传入参数：
+     * - request (Request): HTTP请求对象
+     *   - status (int): 审核结果，必填，3表示通过，4表示退回
+     *   - remark (string, optional): 审核备注
+     * - id (int): 请款单ID
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
      */
     public function approve(Request $request, $id)
     {
@@ -422,7 +580,16 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 导出请款单
+     * 导出请款单 export
+     * 
+     * 功能描述：导出请款单数据（当前功能开发中）
+     * 
+     * 传入参数：
+     * - request (Request): HTTP请求对象
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
      */
     public function export(Request $request)
     {
@@ -437,7 +604,24 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 获取统计数据
+     * 获取统计数据 statistics
+     * 
+     * 功能描述：获取请款单相关的统计数据
+     * 
+     * 传入参数：
+     * - request (Request): HTTP请求对象
+     *   - customerName (string, optional): 客户名称搜索条件
+     * 
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
+     * - data (object): 统计数据
+     *   - total (int): 总数
+     *   - draft (int): 草稿数量
+     *   - pending (int): 待审核数量
+     *   - approved (int): 已通过数量
+     *   - rejected (int): 已退回数量
+     *   - totalAmount (float): 总金额
      */
     public function statistics(Request $request)
     {
@@ -474,7 +658,17 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 生成请款单号
+     * 生成请款单号 generateRequestNo
+     * 
+     * 功能描述：生成唯一的请款单号
+     * 
+     * 生成规则：
+     * - 前缀：QK
+     * - 日期：年月日（YYYYMMDD格式）
+     * - 序号：4位数字，每天从1开始递增，不足4位补0
+     * 
+     * 输出参数：
+     * - string: 生成的请款单号
      */
     private function generateRequestNo()
     {
@@ -495,7 +689,20 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * 获取状态文本
+     * 获取状态文本 getStatusText
+     * 
+     * 功能描述：将状态码转换为可读的状态文本
+     * 
+     * 传入参数：
+     * - status (int): 状态码
+     *   - 1: 草稿
+     *   - 2: 待审核
+     *   - 3: 已通过
+     *   - 4: 已退回
+     *   - 5: 已撤回
+     * 
+     * 输出参数：
+     * - string: 状态文本，如果状态码无效则返回'未知'
      */
     private function getStatusText($status)
     {
