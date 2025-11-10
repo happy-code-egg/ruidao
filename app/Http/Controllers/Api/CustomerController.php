@@ -1738,7 +1738,6 @@ class CustomerController extends Controller
         try {
             // 从数据库获取客户等级
             $customerLevels = \App\Models\CustomerLevel::where('is_valid', 1)
-                ->orderBy('sort_order')
                 ->orderBy('sort')
                 ->select('id as value', 'level_name as label', 'level_code')
                 ->get()
@@ -2796,9 +2795,9 @@ class CustomerController extends Controller
         // 确保客户等级数据
         if (\App\Models\CustomerLevel::count() == 0) {
             $levels = [
-                ['level_name' => '重要客户', 'level_code' => 'IMPORTANT', 'sort' => 1, 'sort_order' => 1, 'is_valid' => 1, 'created_by' => 1, 'updated_by' => 1],
-                ['level_name' => '一般客户', 'level_code' => 'GENERAL', 'sort' => 2, 'sort_order' => 2, 'is_valid' => 1, 'created_by' => 1, 'updated_by' => 1],
-                ['level_name' => '潜在客户', 'level_code' => 'POTENTIAL', 'sort' => 3, 'sort_order' => 3, 'is_valid' => 1, 'created_by' => 1, 'updated_by' => 1]
+                ['level_name' => '重要客户', 'level_code' => 'IMPORTANT', 'sort' => 1, 'is_valid' => 1, 'created_by' => 1, 'updated_by' => 1],
+                ['level_name' => '一般客户', 'level_code' => 'GENERAL', 'sort' => 2, 'is_valid' => 1, 'created_by' => 1, 'updated_by' => 1],
+                ['level_name' => '潜在客户', 'level_code' => 'POTENTIAL', 'sort' => 3, 'is_valid' => 1, 'created_by' => 1, 'updated_by' => 1]
             ];
 
             foreach ($levels as $level) {
