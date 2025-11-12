@@ -66,4 +66,64 @@ class CaseStatusesController extends BaseDataConfigController
             // 可以在这里添加特定的验证消息
         ]);
     }
+
+    /**
+     * 获取项目状态列表（支持按项目类型筛选）
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index(\Illuminate\Http\Request $request)
+    {
+        try {
+            $query = CaseStatuses::query();
+
+            // 关键字搜索
+            if ($request->has('keyword') && !empty($request->keyword)) {
+                $keyword = $request->keyword;
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%{$keyword}%")
+                      ->orWhere('code', 'like', "%{$keyword}%")
+                      ->orWhere('description', 'like', "%{$keyword}%")
+                      ->orWhere('status_name', 'like', "%{$keyword}%");
+                });
+            }
+
+            // 状态筛选
+            if ($request->has('status') && $request->status !== '' && $request->status !== null) {
+                $query->where('status', $request->status);
+            }
+
+            // 项目类型筛选
+            if ($request->has('case_type') && !empty($request->case_type)) {
+                $query->where('case_type', $request->case_type);
+            }
+
+            // 分页
+            $page = max(1, (int)$request->get('page', 1));
+            $limit = max(1, min(100, (int)$request->get('limit', 15)));
+
+            // 获取总数
+            $total = $query->count();
+
+            // 获取数据
+            $data = $query->orderBy('sort_order')
+                         ->orderBy('id')
+                         ->offset(($page - 1) * $limit)
+                         ->limit($limit)
+                         ->get();
+
+            return json_success('获取列表成功', [
+                'list' => $data,
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit,
+                'pages' => ceil($total / $limit)
+            ]);
+
+        } catch (\Exception $e) {
+            log_exception($e, '获取项目状态列表失败');
+            return json_fail('获取列表失败');
+        }
+    }
 }

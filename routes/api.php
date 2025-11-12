@@ -774,6 +774,15 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     Route::delete('/data-config/business-statuses/{id}', 'BusinessStatusController@destroy')->name('api.business.statuses.destroy');// 删除商机状态
     Route::post('/data-config/business-statuses/batch-status', 'BusinessStatusController@batchUpdateStatus')->name('api.business.statuses.batch.status');// 未使用
 
+    // 项目状态设置
+    Route::get('/data-config/case-statuses', 'CaseStatusesController@index')->name('api.case.statuses.index');// 获取项目状态列表
+    Route::get('/data-config/case-statuses/options', 'CaseStatusesController@options')->name('api.case.statuses.options');// 获取项目状态选项列表
+    Route::post('/data-config/case-statuses', 'CaseStatusesController@store')->name('api.case.statuses.store');// 创建项目状态
+    Route::get('/data-config/case-statuses/{id}', 'CaseStatusesController@show')->name('api.case.statuses.show');// 获取项目状态详情
+    Route::put('/data-config/case-statuses/{id}', 'CaseStatusesController@update')->name('api.case.statuses.update');// 更新项目状态
+    Route::delete('/data-config/case-statuses/{id}', 'CaseStatusesController@destroy')->name('api.case.statuses.destroy');// 删除项目状态
+    Route::post('/data-config/case-statuses/batch-status', 'CaseStatusesController@batchUpdateStatus')->name('api.case.statuses.batch.status');// 批量更新项目状态
+
     // 商机类型设置
     Route::get('/data-config/opportunity-types', 'OpportunityTypeController@index')->name('api.opportunity.types.index');// 获取商机类型列表
     Route::get('/data-config/opportunity-types/options', 'OpportunityTypeController@options')->name('api.opportunity.types.options');// 获取商机类型选项列表

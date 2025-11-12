@@ -75,6 +75,17 @@ class CaseStatuses extends Model
     }
 
     /**
+     * 启用状态范围查询（与scopeActive相同，用于兼容BaseDataConfigController）
+     * 用于查询启用状态(状态值为1)的记录
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeEnabled($query)
+    {
+        return $query->where('status', 1);
+    }
+
+    /**
      * 排序范围查询
      * 按照排序字段和ID进行升序排列
      * @param \Illuminate\Database\Eloquent\Builder $query
