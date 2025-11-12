@@ -835,10 +835,15 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     // 项目处理事项管理
     Route::get('/case-processes', 'CaseProcessController@index')->name('api.case.processes.index');// 获取处理事项列表
     Route::post('/case-processes', 'CaseProcessController@store')->name('api.case.processes.store');// 创建处理事项
+    // 项目处理事项更新管理 - 必须放在 {id} 路由之前
+    Route::get('/case-processes/update-list', 'CaseProcessController@getUpdateList')->name('api.case.processes.update.list');// 获取需要更新处理事项的项目列表
+    Route::get('/case-processes/case/{caseId}/detail', 'CaseProcessController@getCaseDetail')->name('api.case.processes.case.detail');// 获取项目处理详情
+    Route::get('/case-processes/case/{caseId}', 'CaseProcessController@getCaseProcesses')->name('api.case.processes.case.processes');// 获取项目的处理事项列表
+    Route::post('/case-processes/case/{caseId}/update', 'CaseProcessController@updateCaseProcesses')->name('api.case.processes.case.update');// 更新项目的处理事项
+    Route::post('/case-processes/batch-update', 'CaseProcessController@batchUpdate')->name('api.case.processes.batch.update');// 批量更新项目处理事项
     Route::get('/case-processes/{id}', 'CaseProcessController@show')->name('api.case.processes.show');// 获取处理事项详情
     Route::put('/case-processes/{id}', 'CaseProcessController@update')->name('api.case.processes.update');// 修改处理事项
     Route::delete('/case-processes/{id}', 'CaseProcessController@destroy')->name('api.case.processes.destroy');// 删除处理事项
-    Route::get('/case-processes/case/{caseId}', 'CaseProcessController@getByCaseId')->name('api.case.processes.by.case');// 根据项目ID获取处理事项列表
 
     // 项目系数设置
     Route::get('/data-config/case-coefficients', 'CaseCoefficientController@index')->name('api.case.coefficients.index');// 获取项目系数列表
@@ -1080,13 +1085,6 @@ Route::get('/test-workflow-config', function(\Illuminate\Http\Request $request) 
     Route::put('/contract-case-records/{id}', 'ContractCaseRecordController@update')->name('api.contract.case.records.update');// 更新合同项目记录
     Route::delete('/contract-case-records/{id}', 'ContractCaseRecordController@destroy')->name('api.contract.case.records.destroy');// 删除合同项目记录
     Route::post('/contract-case-records/{id}/file', 'ContractCaseRecordController@file')->name('api.contract.case.records.file');// 上传合同项目记录文件
-
-    // 项目处理事项更新管理
-    Route::get('/case-processes/update-list', 'CaseProcessController@getUpdateList')->name('api.case.processes.update.list');// 获取需要更新处理事项的项目列表
-    Route::get('/case-processes/case/{caseId}/detail', 'CaseProcessController@getCaseDetail')->name('api.case.processes.case.detail');// 获取项目处理详情
-    Route::get('/case-processes/case/{caseId}', 'CaseProcessController@getCaseProcesses')->name('api.case.processes.case.processes');// 获取项目的处理事项列表
-    Route::post('/case-processes/case/{caseId}/update', 'CaseProcessController@updateCaseProcesses')->name('api.case.processes.case.update');// 更新项目的处理事项
-    Route::post('/case-processes/batch-update', 'CaseProcessController@batchUpdate')->name('api.case.processes.batch.update');// 批量更新项目处理事项
 
 });
 

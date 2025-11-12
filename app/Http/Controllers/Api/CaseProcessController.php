@@ -666,8 +666,8 @@ class CaseProcessController extends Controller
             $updateStatus = $request->get('updateStatus');
 
             // 构建查询 - 获取有处理事项需要更新的项目
-            // 关联 contract_cases、customers、case_processes 和 users 表
-            $query = \DB::table('contract_cases as cc')
+            // 关联 cases、customers、case_processes 和 users 表
+            $query = \DB::table('cases as cc')
                 ->leftJoin('customers as c', 'cc.customer_id', '=', 'c.id')
                 ->leftJoin('case_processes as cp', 'cc.id', '=', 'cp.case_id')
                 ->leftJoin('users as creator', 'cp.created_by', '=', 'creator.id')
@@ -675,24 +675,24 @@ class CaseProcessController extends Controller
                 // 选择需要的字段，包括统计信息和用户信息
                 ->select([
                     'cc.id',
-                    'cc.our_ref_number',
+                    'cc.case_code as our_ref_number',
                     'cc.application_no',
                     'cc.case_name',
                     'c.customer_name as client_name',
                     \DB::raw('COUNT(cp.id) as process_count'),  // 处理事项总数
                     \DB::raw('SUM(CASE WHEN cp.process_status = 2 THEN 1 ELSE 0 END) as processing_count'),  // 处理中事项数
                     \DB::raw('MAX(cp.updated_at) as update_time'),  // 最新更新时间
-                    \DB::raw('GROUP_CONCAT(DISTINCT creator.name) as creator_name'),  // 创建人姓名（多个用逗号分隔）
-                    \DB::raw('GROUP_CONCAT(DISTINCT processor.name) as processor_name')  // 处理人姓名（多个用逗号分隔）
+                    \DB::raw('STRING_AGG(DISTINCT creator.real_name, \',\') as creator_name'),  // 创建人姓名（多个用逗号分隔）- PostgreSQL语法
+                    \DB::raw('STRING_AGG(DISTINCT processor.real_name, \',\') as processor_name')  // 处理人姓名（多个用逗号分隔）- PostgreSQL语法
                 ])
                 // 只查询存在处理事项的项目
                 ->whereNotNull('cp.id')
                 // 按项目信息分组
-                ->groupBy('cc.id', 'cc.our_ref_number', 'cc.application_no', 'cc.case_name', 'c.customer_name');
+                ->groupBy('cc.id', 'cc.case_code', 'cc.application_no', 'cc.case_name', 'c.customer_name');
 
             // 添加搜索条件
             if ($ourRefNumber) {
-                $query->where('cc.our_ref_number', 'like', "%{$ourRefNumber}%");
+                $query->where('cc.case_code', 'like', "%{$ourRefNumber}%");
             }
             if ($applicationNo) {
                 $query->where('cc.application_no', 'like', "%{$applicationNo}%");
@@ -782,7 +782,7 @@ class CaseProcessController extends Controller
     {
         try {
             // 获取项目基本信息
-            $case = \DB::table('contract_cases as cc')
+            $case = \DB::table('cases as cc')
                 ->leftJoin('customers as c', 'cc.customer_id', '=', 'c.id')
                 ->where('cc.id', $caseId)
                 ->select([
