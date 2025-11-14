@@ -1146,7 +1146,7 @@ Route::prefix('invoices')->group(function () {
 
 // 客户相关路由（发票用）
 // 获取客户列表
-Route::get('/customers', 'InvoiceApplicationController@getCustomerList')->name('api.customers.list');
+// Route::get('/customers', 'InvoiceApplicationController@getCustomerList')->name('api.customers.list');
 // 获取客户发票信息
 Route::get('/customers/{customerId}/invoice-info', 'InvoiceApplicationController@getCustomerInvoiceInfo')->name('api.customers.invoice.info');
 // 获取客户合同列表
