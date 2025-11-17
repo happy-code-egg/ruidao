@@ -79,7 +79,10 @@ class WriteOffController extends Controller
                 });
             }
 
-            if ($request->filled('receivedTimeStart') && $request->filled('receivedTimeEnd')) {
+            // 支持两种日期参数格式
+            if ($request->filled('startDate') && $request->filled('endDate')) {
+                $query->whereBetween('received_date', [$request->startDate, $request->endDate]);
+            } elseif ($request->filled('receivedTimeStart') && $request->filled('receivedTimeEnd')) {
                 $query->whereBetween('received_date', [$request->receivedTimeStart, $request->receivedTimeEnd]);
             }
 
@@ -460,7 +463,10 @@ class WriteOffController extends Controller
                 });
             }
 
-            if ($request->filled('writeOffTimeStart') && $request->filled('writeOffTimeEnd')) {
+            // 支持两种日期参数格式
+            if ($request->filled('startDate') && $request->filled('endDate')) {
+                $query->whereBetween('write_off_date', [$request->startDate, $request->endDate]);
+            } elseif ($request->filled('writeOffTimeStart') && $request->filled('writeOffTimeEnd')) {
                 $query->whereBetween('write_off_date', [$request->writeOffTimeStart, $request->writeOffTimeEnd]);
             }
 
@@ -656,6 +662,50 @@ class WriteOffController extends Controller
                 ->whereNull('deleted_at')
                 ->where('status', 4)
                 ->where('unclaimed_amount', '=', 0);
+
+            // 搜索条件
+            if ($request->filled('paymentNo')) {
+                $query->where('payment_no', 'like', '%' . $request->paymentNo . '%');
+            }
+
+            if ($request->filled('requestNo')) {
+                $query->whereHas('writeOffs.paymentRequest', function($q) use ($request) {
+                    $q->where('request_no', 'like', '%' . $request->requestNo . '%');
+                });
+            }
+
+            if ($request->filled('customerName')) {
+                $query->whereHas('customer', function($q) use ($request) {
+                    $q->where('customer_name', 'like', '%' . $request->customerName . '%');
+                });
+            }
+
+            if ($request->filled('contractNo')) {
+                $query->whereHas('contract', function($q) use ($request) {
+                    $q->where('contract_no', 'like', '%' . $request->contractNo . '%');
+                });
+            }
+
+            // 支持两种日期参数格式
+            if ($request->filled('startDate') && $request->filled('endDate')) {
+                $query->whereBetween('received_date', [$request->startDate, $request->endDate]);
+            } elseif ($request->filled('receivedTimeStart') && $request->filled('receivedTimeEnd')) {
+                $query->whereBetween('received_date', [$request->receivedTimeStart, $request->receivedTimeEnd]);
+            }
+
+            if ($request->filled('minAmount')) {
+                $query->where('amount', '>=', $request->minAmount);
+            }
+
+            if ($request->filled('maxAmount')) {
+                $query->where('amount', '<=', $request->maxAmount);
+            }
+
+            if ($request->filled('claimedBy')) {
+                $query->whereHas('claimer', function($q) use ($request) {
+                    $q->where('real_name', 'like', '%' . $request->claimedBy . '%');
+                });
+            }
 
             // 分页
             $page = $request->input('page', 1);
@@ -995,11 +1045,54 @@ class WriteOffController extends Controller
         try {
             $query = PaymentReceived::with(['customer.techLead', 'contract', 'claimer', 'paymentRequests'])
                 ->whereNull('deleted_at')
-                ->where('status', 3);
+                ->where('status', 3)
+                ->where(function($q) {
+                    $q->whereRaw('amount > claimed_amount')
+                      ->orWhereRaw('unclaimed_amount > 0');
+                });
 
             // 应用搜索条件
             if ($request->filled('paymentNo')) {
                 $query->where('payment_no', 'like', '%' . $request->paymentNo . '%');
+            }
+
+            if ($request->filled('requestNo')) {
+                $query->whereHas('paymentRequests', function($q) use ($request) {
+                    $q->where('request_no', 'like', '%' . $request->requestNo . '%');
+                });
+            }
+
+            if ($request->filled('customerName')) {
+                $query->whereHas('customer', function($q) use ($request) {
+                    $q->where('customer_name', 'like', '%' . $request->customerName . '%');
+                });
+            }
+
+            if ($request->filled('contractNo')) {
+                $query->whereHas('contract', function($q) use ($request) {
+                    $q->where('contract_no', 'like', '%' . $request->contractNo . '%');
+                });
+            }
+
+            // 支持两种日期参数格式
+            if ($request->filled('startDate') && $request->filled('endDate')) {
+                $query->whereBetween('received_date', [$request->startDate, $request->endDate]);
+            } elseif ($request->filled('receivedTimeStart') && $request->filled('receivedTimeEnd')) {
+                $query->whereBetween('received_date', [$request->receivedTimeStart, $request->receivedTimeEnd]);
+            }
+
+            if ($request->filled('minAmount')) {
+                $query->where('amount', '>=', $request->minAmount);
+            }
+
+            if ($request->filled('maxAmount')) {
+                $query->where('amount', '<=', $request->maxAmount);
+            }
+
+            if ($request->filled('claimedBy')) {
+                $query->whereHas('claimer', function($q) use ($request) {
+                    $q->where('real_name', 'like', '%' . $request->claimedBy . '%');
+                });
             }
 
             $list = $query->orderBy('received_date', 'desc')->get();
@@ -1056,11 +1149,51 @@ class WriteOffController extends Controller
                 'customer.techLead',
                 'contract',
                 'writeOffUser'
-            ])->whereNull('deleted_at');
+            ])->whereNull('deleted_at')
+            ->where('status', 1); // 只导出已完成的核销记录
 
             // 应用搜索条件
             if ($request->filled('writeOffNo')) {
                 $query->where('write_off_no', 'like', '%' . $request->writeOffNo . '%');
+            }
+
+            if ($request->filled('paymentNo')) {
+                $query->whereHas('paymentReceived', function($q) use ($request) {
+                    $q->where('payment_no', 'like', '%' . $request->paymentNo . '%');
+                });
+            }
+
+            if ($request->filled('requestNo')) {
+                $query->whereHas('paymentRequest', function($q) use ($request) {
+                    $q->where('request_no', 'like', '%' . $request->requestNo . '%');
+                });
+            }
+
+            if ($request->filled('customerName')) {
+                $query->whereHas('customer', function($q) use ($request) {
+                    $q->where('customer_name', 'like', '%' . $request->customerName . '%');
+                });
+            }
+
+            // 支持两种日期参数格式
+            if ($request->filled('startDate') && $request->filled('endDate')) {
+                $query->whereBetween('write_off_date', [$request->startDate, $request->endDate]);
+            } elseif ($request->filled('writeOffTimeStart') && $request->filled('writeOffTimeEnd')) {
+                $query->whereBetween('write_off_date', [$request->writeOffTimeStart, $request->writeOffTimeEnd]);
+            }
+
+            if ($request->filled('minAmount')) {
+                $query->where('write_off_amount', '>=', $request->minAmount);
+            }
+
+            if ($request->filled('maxAmount')) {
+                $query->where('write_off_amount', '<=', $request->maxAmount);
+            }
+
+            if ($request->filled('writeOffBy')) {
+                $query->whereHas('writeOffUser', function($q) use ($request) {
+                    $q->where('real_name', 'like', '%' . $request->writeOffBy . '%');
+                });
             }
 
             $list = $query->orderBy('write_off_date', 'desc')->get();

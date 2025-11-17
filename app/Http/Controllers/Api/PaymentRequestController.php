@@ -581,21 +581,65 @@ class PaymentRequestController extends Controller
 
     /**
      * 导出请款单 export
-     * 
-     * 功能描述：导出请款单数据（当前功能开发中）
-     * 
+     *
+     * 功能描述：导出请款单数据为Excel文件
+     *
      * 传入参数：
      * - request (Request): HTTP请求对象
-     * 
+     *   - ids (array, optional): 请款单ID数组，如果提供则只导出指定的请款单
+     *
      * 输出参数：
-     * - code (int): 状态码，0表示成功
-     * - msg (string): 操作结果消息
+     * - Excel文件流
      */
     public function export(Request $request)
     {
         try {
-            // TODO: 实现导出功能
-            return json_success('导出功能开发中');
+            $query = PaymentRequest::with(['customer', 'contract', 'creator', 'details'])
+                ->whereNull('deleted_at');
+
+            // 如果提供了ID列表，只导出指定的请款单
+            if ($request->filled('ids') && is_array($request->ids)) {
+                $query->whereIn('id', $request->ids);
+            }
+
+            $paymentRequests = $query->get();
+
+            // 准备导出数据
+            $exportData = [];
+            $exportData[] = ['请款单号', '客户名称', '合同号', '总金额', '官费', '服务费', '状态', '创建人', '创建时间', '备注'];
+
+            foreach ($paymentRequests as $request) {
+                $exportData[] = [
+                    $request->request_no,
+                    $request->customer ? $request->customer->customer_name : '',
+                    $request->contract ? $request->contract->contract_no : '',
+                    $request->total_amount,
+                    $request->details->where('fee_type', 'official')->sum('amount'),
+                    $request->details->where('fee_type', 'service')->sum('amount'),
+                    $this->getStatusText($request->request_status),
+                    $request->creator ? $request->creator->name : '',
+                    $request->created_at ? $request->created_at->format('Y-m-d H:i:s') : '',
+                    $request->remark ?? '',
+                ];
+            }
+
+            // 使用简单的CSV格式导出（可以后续升级为Excel）
+            $filename = '请款单列表_' . date('YmdHis') . '.csv';
+
+            $callback = function() use ($exportData) {
+                $file = fopen('php://output', 'w');
+                // 添加BOM以支持中文
+                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+                foreach ($exportData as $row) {
+                    fputcsv($file, $row);
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]);
 
         } catch (\Exception $e) {
             log_exception($e, '导出请款单失败');
@@ -658,15 +702,99 @@ class PaymentRequestController extends Controller
     }
 
     /**
+     * 加入请款单 addFees
+     *
+     * 功能描述：将选中的费用项加入到新的请款单草稿中
+     *
+     * 传入参数：
+     * - request (Request): HTTP请求对象
+     *   - items (array): 费用项数组，必填
+     *     - id (int): 费用ID
+     *
+     * 输出参数：
+     * - code (int): 状态码，0表示成功
+     * - msg (string): 操作结果消息
+     * - data (object): 创建结果数据
+     *   - id (int): 新创建的请款单ID
+     *   - requestNo (string): 请款单号
+     */
+    public function addFees(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'items' => 'required|array|min:1',
+                'items.*.id' => 'required|exists:case_fees,id',
+            ]);
+
+            if ($validator->fails()) {
+                return json_fail('验证失败', $validator->errors());
+            }
+
+            DB::beginTransaction();
+
+            // 获取第一个费用项以确定客户
+            $firstFeeId = $request->items[0]['id'];
+            $firstFee = CaseFee::with('case.customer')->findOrFail($firstFeeId);
+
+            if (!$firstFee->case || !$firstFee->case->customer_id) {
+                return json_fail('费用项未关联有效的客户');
+            }
+
+            // 创建请款单草稿
+            $paymentRequest = PaymentRequest::create([
+                'request_no' => $this->generateRequestNo(),
+                'customer_id' => $firstFee->case->customer_id,
+                'contract_id' => $firstFee->case->contract_id ?? null,
+                'request_status' => 1, // 1-草稿
+                'total_amount' => 0,
+                'created_by' => Auth::id() ?? 1,
+            ]);
+
+            // 添加请款明细
+            $totalAmount = 0;
+            foreach ($request->items as $item) {
+                $caseFee = CaseFee::findOrFail($item['id']);
+
+                PaymentRequestDetail::create([
+                    'request_id' => $paymentRequest->id,
+                    'case_id' => $caseFee->case_id,
+                    'case_fee_id' => $caseFee->id,
+                    'fee_type' => $caseFee->fee_type,
+                    'fee_name' => $caseFee->fee_name,
+                    'amount' => $caseFee->amount,
+                    'currency' => $caseFee->currency ?? 'CNY',
+                ]);
+
+                $totalAmount += $caseFee->amount;
+            }
+
+            // 更新总金额
+            $paymentRequest->update(['total_amount' => $totalAmount]);
+
+            DB::commit();
+
+            return json_success('已加入请款单', [
+                'id' => $paymentRequest->id,
+                'requestNo' => $paymentRequest->request_no,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            log_exception($e, '加入请款单失败');
+            return json_fail('加入请款单失败');
+        }
+    }
+
+    /**
      * 生成请款单号 generateRequestNo
-     * 
+     *
      * 功能描述：生成唯一的请款单号
-     * 
+     *
      * 生成规则：
      * - 前缀：QK
      * - 日期：年月日（YYYYMMDD格式）
      * - 序号：4位数字，每天从1开始递增，不足4位补0
-     * 
+     *
      * 输出参数：
      * - string: 生成的请款单号
      */

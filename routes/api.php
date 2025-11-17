@@ -403,6 +403,7 @@ Route::group(['namespace' => 'Api'], function () {
     Route::post('/payment-requests/{id}/submit', 'PaymentRequestController@submit')->name('api.payment.requests.submit');// 提交请款申请
     Route::post('/payment-requests/{id}/withdraw', 'PaymentRequestController@withdraw')->name('api.payment.requests.withdraw');// 撤回请款申请
     Route::post('/payment-requests/{id}/approve', 'PaymentRequestController@approve')->name('api.payment.requests.approve');// 审批请款申请
+    Route::post('/payment-requests/add-fees', 'PaymentRequestController@addFees')->name('api.payment.requests.add.fees');// 加入请款单
     Route::post('/payment-requests/export', 'PaymentRequestController@export')->name('api.payment.requests.export');// 导出请款申请数据
 
     // 到款管理（临时移到公开路由用于测试）
@@ -450,6 +451,10 @@ Route::group(['namespace' => 'Api'], function () {
     Route::get('/commission/stats', 'CommissionController@getCommissionStats')->name('api.commission.stats');// 获取提成统计数据
     Route::get('/commission/user-summary', 'CommissionController@getUserCommissionSummary')->name('api.commission.user.summary');// 获取用户提成汇总
     Route::get('/commission/config', 'CommissionController@getCommissionConfig')->name('api.commission.config');// 获取提成配置
+    Route::get('/commission/business', 'CommissionController@getBusinessCommissionList')->name('api.commission.business.list');// 获取商务提成列表
+    Route::get('/commission/operation', 'CommissionController@getOperationCommissionList')->name('api.commission.operation.list');// 获取运营提成列表
+    Route::post('/commission/business/export', 'CommissionController@exportBusinessCommission')->name('api.commission.business.export');// 导出商务提成
+    Route::post('/commission/operation/export', 'CommissionController@exportOperationCommission')->name('api.commission.operation.export');// 导出运营提成
 
     // 核稿管理（临时移到公开路由用于测试）- 使用修复版控制器
     Route::get('/review/draft-list', 'ReviewControllerFixed@getDraftList')->name('api.review.draft.list');// 获取草稿列表
@@ -1128,6 +1133,13 @@ Route::prefix('invoice-applications')->group(function () {
     // 历史记录
     // 获取发票申请历史记录
     Route::get('/{id}/history', 'InvoiceApplicationController@history')->name('api.invoice.applications.history');
+
+    // 催办发票申请
+    Route::post('/{id}/urge', 'InvoiceApplicationController@urge')->name('api.invoice.applications.urge');
+    // 撤回发票申请
+    Route::post('/{id}/recall', 'InvoiceApplicationController@recall')->name('api.invoice.applications.recall');
+    // 提交发票申请
+    Route::post('/{id}/submit', 'InvoiceApplicationController@submit')->name('api.invoice.applications.submit');
 });
 
 // 发票查询路由

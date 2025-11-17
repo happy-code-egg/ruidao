@@ -405,16 +405,16 @@ class CommissionController extends Controller
 
     /**
      * 获取提成配置
-     * 
+     *
      * 功能说明：
      * - 返回系统中所有案例类型的提成配置信息
      * - 提供前端展示和计算参考的配置数据
      * - 配置包含基础提成比例、基础费用、奖励阈值等参数
      * - 用于前端界面显示提成规则和计算说明
-     * 
+     *
      * 请求参数：
      * - 无需传入参数
-     * 
+     *
      * 响应参数：
      * - success (boolean): 请求是否成功
      * - data (object): 提成配置数据对象，按案例类型分组
@@ -427,7 +427,7 @@ class CommissionController extends Controller
      *   - trademark (object): 商标案例配置（字段同上）
      *   - copyright (object): 版权案例配置（字段同上）
      *   - tech_service (object): 技术服务案例配置（字段同上）
-     * 
+     *
      * @param Request $request HTTP请求对象（未使用）
      * @return \Illuminate\Http\JsonResponse JSON响应
      */
@@ -481,6 +481,304 @@ class CommissionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => '获取配置失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 获取商务提成列表
+     */
+    public function getBusinessCommissionList(Request $request)
+    {
+        try {
+            $page = $request->input('page', 1);
+            $limit = $request->input('limit', 20);
+            $status = $request->input('status');
+
+            // 构建查询
+            $query = DB::table('case_processes as cp')
+                ->join('cases as c', 'cp.case_id', '=', 'c.id')
+                ->join('users as u', 'cp.assigned_to', '=', 'u.id')
+                ->whereNotNull('cp.assigned_to')
+                ->where('cp.process_status', CaseProcess::STATUS_COMPLETED);
+
+            // 状态筛选
+            if ($status && $status !== 'all') {
+                $statusMap = [
+                    'pending' => 1,
+                    'declared' => 2,
+                    'reviewing' => 3,
+                    'approved' => 4,
+                    'paid' => 5
+                ];
+                if (isset($statusMap[$status])) {
+                    $query->where('cp.commission_status', $statusMap[$status]);
+                }
+            }
+
+            // 搜索条件
+            if ($request->filled('businessPerson')) {
+                $query->where('u.real_name', 'like', '%' . $request->businessPerson . '%');
+            }
+            if ($request->filled('customerName')) {
+                $query->where('c.customer_name', 'like', '%' . $request->customerName . '%');
+            }
+            if ($request->filled('contractNo')) {
+                $query->where('c.contract_no', 'like', '%' . $request->contractNo . '%');
+            }
+            if ($request->filled('performanceNo')) {
+                $query->where('cp.performance_no', 'like', '%' . $request->performanceNo . '%');
+            }
+            if ($request->filled('commissionMonth')) {
+                $query->whereRaw('DATE_FORMAT(cp.completion_date, "%Y-%m") = ?', [$request->commissionMonth]);
+            }
+
+            $total = $query->count();
+            $list = $query->select([
+                    'cp.id',
+                    'cp.performance_no',
+                    'u.real_name as business_person',
+                    'c.customer_name',
+                    'c.contract_no',
+                    'cp.completion_date as commission_month',
+                    'cp.commission_status as status'
+                ])
+                ->offset(($page - 1) * $limit)
+                ->limit($limit)
+                ->get();
+
+            return response()->json([
+                'code' => 0,
+                'msg' => '获取成功',
+                'data' => [
+                    'list' => $list,
+                    'total' => $total,
+                    'page' => $page,
+                    'limit' => $limit
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'code' => 1,
+                'msg' => '获取商务提成列表失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 获取运营提成列表
+     */
+    public function getOperationCommissionList(Request $request)
+    {
+        try {
+            $page = $request->input('page', 1);
+            $limit = $request->input('limit', 20);
+            $status = $request->input('status');
+
+            // 构建查询
+            $query = DB::table('case_processes as cp')
+                ->join('cases as c', 'cp.case_id', '=', 'c.id')
+                ->join('users as u', 'cp.assigned_to', '=', 'u.id')
+                ->whereNotNull('cp.assigned_to')
+                ->where('cp.process_status', CaseProcess::STATUS_COMPLETED);
+
+            // 状态筛选
+            if ($status && $status !== 'all') {
+                $statusMap = [
+                    'pending' => 1,
+                    'declared' => 2,
+                    'reviewing' => 3,
+                    'approved' => 4,
+                    'rejected' => 6,
+                    'personal' => 1,
+                    'byPerson' => null,
+                    'workflow' => null
+                ];
+                if (isset($statusMap[$status]) && $statusMap[$status] !== null) {
+                    $query->where('cp.commission_status', $statusMap[$status]);
+                }
+            }
+
+            // 搜索条件
+            if ($request->filled('operationPerson')) {
+                $query->where('u.real_name', 'like', '%' . $request->operationPerson . '%');
+            }
+            if ($request->filled('caseNo')) {
+                $query->where('c.case_code', 'like', '%' . $request->caseNo . '%');
+            }
+            if ($request->filled('taskType')) {
+                $query->where('cp.task_type', $request->taskType);
+            }
+            if ($request->filled('commissionMonth')) {
+                $query->whereRaw('DATE_FORMAT(cp.completion_date, "%Y-%m") = ?', [$request->commissionMonth]);
+            }
+
+            $total = $query->count();
+            $list = $query->select([
+                    'cp.id',
+                    'c.case_code as case_no',
+                    'cp.task_name',
+                    'cp.task_type',
+                    'u.real_name as operation_person',
+                    'cp.completion_date',
+                    'cp.commission_status as status'
+                ])
+                ->offset(($page - 1) * $limit)
+                ->limit($limit)
+                ->get();
+
+            return response()->json([
+                'code' => 0,
+                'msg' => '获取成功',
+                'data' => [
+                    'list' => $list,
+                    'total' => $total,
+                    'page' => $page,
+                    'limit' => $limit
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'code' => 1,
+                'msg' => '获取运营提成列表失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 导出商务提成
+     */
+    public function exportBusinessCommission(Request $request)
+    {
+        try {
+            // 构建查询（与列表相同的筛选条件）
+            $query = DB::table('case_processes as cp')
+                ->join('cases as c', 'cp.case_id', '=', 'c.id')
+                ->join('users as u', 'cp.assigned_to', '=', 'u.id')
+                ->whereNotNull('cp.assigned_to')
+                ->where('cp.process_status', CaseProcess::STATUS_COMPLETED);
+
+            // 应用搜索条件
+            if ($request->filled('businessPerson')) {
+                $query->where('u.real_name', 'like', '%' . $request->businessPerson . '%');
+            }
+            if ($request->filled('customerName')) {
+                $query->where('c.customer_name', 'like', '%' . $request->customerName . '%');
+            }
+
+            $data = $query->select([
+                    'cp.performance_no',
+                    'u.real_name as business_person',
+                    'c.customer_name',
+                    'c.contract_no',
+                    'cp.completion_date'
+                ])
+                ->get();
+
+            // 生成CSV
+            $filename = '商务提成_' . date('YmdHis') . '.csv';
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ];
+
+            $callback = function() use ($data) {
+                $file = fopen('php://output', 'w');
+                // 添加BOM以支持Excel正确显示中文
+                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+                // 写入表头
+                fputcsv($file, ['业绩单号', '商务人员', '客户名称', '合同编号', '提成月度']);
+
+                // 写入数据
+                foreach ($data as $row) {
+                    fputcsv($file, [
+                        $row->performance_no,
+                        $row->business_person,
+                        $row->customer_name,
+                        $row->contract_no,
+                        $row->completion_date
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'code' => 1,
+                'msg' => '导出失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 导出运营提成
+     */
+    public function exportOperationCommission(Request $request)
+    {
+        try {
+            // 构建查询（与列表相同的筛选条件）
+            $query = DB::table('case_processes as cp')
+                ->join('cases as c', 'cp.case_id', '=', 'c.id')
+                ->join('users as u', 'cp.assigned_to', '=', 'u.id')
+                ->whereNotNull('cp.assigned_to')
+                ->where('cp.process_status', CaseProcess::STATUS_COMPLETED);
+
+            // 应用搜索条件
+            if ($request->filled('operationPerson')) {
+                $query->where('u.real_name', 'like', '%' . $request->operationPerson . '%');
+            }
+            if ($request->filled('caseNo')) {
+                $query->where('c.case_code', 'like', '%' . $request->caseNo . '%');
+            }
+
+            $data = $query->select([
+                    'c.case_code as case_no',
+                    'cp.task_name',
+                    'u.real_name as operation_person',
+                    'cp.completion_date'
+                ])
+                ->get();
+
+            // 生成CSV
+            $filename = '运营提成_' . date('YmdHis') . '.csv';
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ];
+
+            $callback = function() use ($data) {
+                $file = fopen('php://output', 'w');
+                // 添加BOM以支持Excel正确显示中文
+                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+                // 写入表头
+                fputcsv($file, ['案件编号', '任务名称', '运营人员', '完成日期']);
+
+                // 写入数据
+                foreach ($data as $row) {
+                    fputcsv($file, [
+                        $row->case_no,
+                        $row->task_name,
+                        $row->operation_person,
+                        $row->completion_date
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'code' => 1,
+                'msg' => '导出失败：' . $e->getMessage()
             ], 500);
         }
     }
