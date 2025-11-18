@@ -592,7 +592,7 @@ class ContractCaseRecordController extends Controller
     /**
      * 立项操作
      */
-    public function file($id)
+    public function fileCase($id)
     {
         try {
             $record = ContractCaseRecord::find($id);
@@ -646,25 +646,6 @@ class ContractCaseRecordController extends Controller
                 'message' => '立项失败：' . $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * 生成项目编码
-     */
-    private function generateCaseCode($caseType)
-    {
-        $prefix = [
-            1 => 'P', // 专利
-            2 => 'T', // 商标
-            3 => 'C', // 版权
-            4 => 'S', // 科服
-        ];
-
-        $typePrefix = $prefix[$caseType] ?? 'X';
-        $dateStr = date('Ymd');
-        $randomStr = str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
-
-        return $typePrefix . $dateStr . $randomStr;
     }
 
     /**
@@ -724,19 +705,19 @@ class ContractCaseRecordController extends Controller
 
     /**
      * 处理文件上传
-     * 
+     *
      * 处理合同项目记录相关的文件上传
      * 支持多种文件类型，包括文档、图片等
-     * 
+     *
      * @param Request $request HTTP请求对象，包含上传的文件
-     * 
+     *
      * 请求参数：
      * - file: 上传的文件（必需）
      * - record_id: 合同项目记录ID（必需）
      * - file_type: 文件类型标识（可选）
-     * 
+     *
      * @return \Illuminate\Http\JsonResponse 返回文件上传结果的JSON响应
-     * 
+     *
      * 成功响应：
      * {
      *   "success": true,
@@ -747,13 +728,13 @@ class ContractCaseRecordController extends Controller
      *     "file_size": 1024
      *   }
      * }
-     * 
+     *
      * 文件限制：
      * - 最大文件大小：10MB
      * - 支持的文件类型：pdf, doc, docx, jpg, jpeg, png, gif
      * - 文件存储路径：storage/app/public/contract_case_records/
      */
-    public function file(Request $request)
+    public function uploadFile(Request $request)
     {
         try {
             // 验证请求数据
@@ -778,7 +759,7 @@ class ContractCaseRecordController extends Controller
 
             // 生成唯一的文件名，避免文件名冲突
             $fileName = time() . '_' . $file->getClientOriginalName();
-            
+
             // 定义文件存储路径
             $filePath = $file->storeAs('contract_case_records/' . $recordId, $fileName, 'public');
 
