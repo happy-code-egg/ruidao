@@ -47,6 +47,7 @@ class FeeConfig extends Model
         'apply_type' => 'array',
         'country' => 'array',
         'role' => 'array',
+        'use_stage' => 'array',
         'base_fee' => 'decimal:2',
         'small_entity_fee' => 'decimal:2',
         'micro_entity_fee' => 'decimal:2',
