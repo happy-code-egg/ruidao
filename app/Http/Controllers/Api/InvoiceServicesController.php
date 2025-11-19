@@ -33,6 +33,7 @@ protected function getValidationRules($isUpdate = false)
 {
     $rules = [
         'service_name' => 'required|string|max:200',
+        'service_code' => 'nullable|string|max:100',
         'description' => 'nullable|string',
         'is_valid' => 'nullable|in:0,1',
         'sort_order' => 'required|integer|min:0'
@@ -41,6 +42,8 @@ protected function getValidationRules($isUpdate = false)
     if ($isUpdate) {
         $id = request()->route('id');
         $rules['service_code'] .= '|unique:invoice_services,service_code,' . $id . ',id';
+    } else {
+        $rules['service_code'] .= '|unique:invoice_services,service_code';
     }
 
     return $rules;

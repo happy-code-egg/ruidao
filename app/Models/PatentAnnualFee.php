@@ -136,7 +136,7 @@ class PatentAnnualFee extends Model
         if (empty($caseType)) {
             return $query;
         }
-        return $query->where('case_type', $caseType);
+        return $query->where('case_type', 'like', '%' . $caseType . '%');
     }
 
     /**
@@ -150,7 +150,7 @@ class PatentAnnualFee extends Model
         if (empty($applyType)) {
             return $query;
         }
-        return $query->where('apply_type', $applyType);
+        return $query->where('apply_type', 'like', '%' . $applyType . '%');
     }
 
     /**
@@ -164,6 +164,6 @@ class PatentAnnualFee extends Model
         if (empty($country)) {
             return $query;
         }
-        return $query->where('country', $country);
+        return $query->where('country', 'like', '%' . $country . '%');
     }
 }

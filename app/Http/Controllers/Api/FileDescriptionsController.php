@@ -63,9 +63,13 @@ public function index(Request $request)
         // 初始化查询构建器
         $query = FileDescriptions::query();
 
-        // 项目类型搜索条件
+        // 项目类型搜索条件（支持多选）
         if ($request->has('caseType') && !empty($request->caseType)) {
-            $query->where('case_type', $request->caseType);
+            if (is_array($request->caseType)) {
+                $query->whereIn('case_type', $request->caseType);
+            } else {
+                $query->where('case_type', $request->caseType);
+            }
         }
 
         // 文件名称搜索条件

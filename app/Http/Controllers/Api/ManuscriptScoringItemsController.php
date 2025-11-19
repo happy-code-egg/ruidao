@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\ManuscriptScoringItems;
+use Illuminate\Http\Request;
 
 class ManuscriptScoringItemsController extends BaseDataConfigController
 {
@@ -92,6 +93,84 @@ protected function getValidationMessages()
         'code.required' => '审核打分项编码不能为空',      // 编码必填验证消息
         'code.unique' => '审核打分项编码已存在',          // 编码唯一性验证消息
     ]);
+}
+
+/**
+ * 获取审核打分项列表（重写父类方法以支持大类和小类独立筛选）
+ *
+ * 功能描述：查询审核打分项列表，支持大类、小类、关键字、状态等多条件筛选
+ *
+ * 请求参数(Query):
+ * - major_category (string, 可选): 大类，模糊匹配
+ * - minor_category (string, 可选): 小类，模糊匹配
+ * - keyword (string, 可选): 关键字，在name、code、description字段中模糊匹配
+ * - status (0|1, 可选): 状态筛选
+ * - page (int, 默认1): 页码
+ * - limit (int, 默认15): 每页数量
+ *
+ * 返回参数:
+ * - list (array): 列表数据
+ * - total (int): 总条数
+ * - page (int): 当前页码
+ * - limit (int): 每页数量
+ * - pages (int): 总页数
+ */
+public function index(Request $request)
+{
+    try {
+        $query = ManuscriptScoringItems::query();
+
+        // 大类筛选（独立筛选）
+        if ($request->has('major_category') && !empty($request->major_category)) {
+            $query->where('major_category', 'like', '%' . $request->major_category . '%');
+        }
+
+        // 小类筛选（独立筛选）
+        if ($request->has('minor_category') && !empty($request->minor_category)) {
+            $query->where('minor_category', 'like', '%' . $request->minor_category . '%');
+        }
+
+        // 关键字搜索（在name、code、description中搜索）
+        if ($request->has('keyword') && !empty($request->keyword)) {
+            $keyword = $request->keyword;
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                  ->orWhere('code', 'like', "%{$keyword}%")
+                  ->orWhere('description', 'like', "%{$keyword}%");
+            });
+        }
+
+        // 状态筛选
+        if ($request->has('status') && $request->status !== '' && $request->status !== null) {
+            $query->where('status', $request->status);
+        }
+
+        // 分页
+        $page = max(1, (int)$request->get('page', 1));
+        $limit = max(1, min(100, (int)$request->get('limit', 15)));
+
+        // 获取总数
+        $total = $query->count();
+
+        // 获取数据
+        $data = $query->orderBy('sort_order')
+                     ->orderBy('id')
+                     ->offset(($page - 1) * $limit)
+                     ->limit($limit)
+                     ->get();
+
+        return json_success('获取列表成功', [
+            'list' => $data,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'pages' => ceil($total / $limit)
+        ]);
+
+    } catch (\Exception $e) {
+        log_exception($e, '获取审核打分项列表失败');
+        return json_fail('获取列表失败');
+    }
 }
 
 }
