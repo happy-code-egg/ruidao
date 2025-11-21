@@ -1223,3 +1223,21 @@ Route::post('/upload/invoice', function(\Illuminate\Http\Request $request) {
     Route::put('/expenses/{id}', 'Api\ExpenseController@update')->name('api.expenses.update');
     // 删除支出单
     Route::delete('/expenses/{id}', 'Api\ExpenseController@destroy')->name('api.expenses.destroy');
+
+    // 缴费单管理
+    // 批量删除缴费单
+    Route::post('/fee-payments/batch-destroy', 'Api\FeePaymentController@batchDestroy')->name('api.fee-payments.batch.destroy');
+    // 获取缴费单列表
+    Route::get('/fee-payments', 'Api\FeePaymentController@index')->name('api.fee-payments.index');
+    // 创建缴费单
+    Route::post('/fee-payments', 'Api\FeePaymentController@store')->name('api.fee-payments.store');
+    // 提交缴费单
+    Route::post('/fee-payments/{id}/submit', 'Api\FeePaymentController@submit')->name('api.fee-payments.submit');
+    // 退回缴费单
+    Route::post('/fee-payments/{id}/return', 'Api\FeePaymentController@returnToDraft')->name('api.fee-payments.return');
+    // 获取缴费单详情
+    Route::get('/fee-payments/{id}', 'Api\FeePaymentController@show')->name('api.fee-payments.show');
+    // 更新缴费单
+    Route::put('/fee-payments/{id}', 'Api\FeePaymentController@update')->name('api.fee-payments.update');
+    // 删除缴费单
+    Route::delete('/fee-payments/{id}', 'Api\FeePaymentController@destroy')->name('api.fee-payments.destroy');
