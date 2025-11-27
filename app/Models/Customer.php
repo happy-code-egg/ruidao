@@ -53,6 +53,8 @@ class Customer extends Model
         'remarks',                      // 备注
         'created_by',                   // 创建人ID
         'updated_by',                   // 更新人ID
+        'creator',                      // 创建人姓名
+        'updater',                      // 更新人姓名
         // 第一批新增字段
         'province',                     // 省份
         'city',                         // 城市

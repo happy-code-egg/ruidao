@@ -16,7 +16,7 @@ use App\Models\Cases;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Log;
 
 /**
  * 客户管理控制器
@@ -884,13 +884,21 @@ class CustomerController extends Controller
             // 总是生成新的客户编号（不依赖前端输入）
             $data['customer_code'] = $this->generateCustomerCode();
 
-            // 设置创建人
-            $data['created_by'] = auth()->id();
-            $data['updated_by'] = auth()->id();
+            // 获取当前登录用户（路由中间件已确保用户已登录）
+            $currentUser = auth()->user();
+            
+            // 设置创建人和更新人（ID和姓名）
+            $data['created_by'] = $currentUser->id;
+            $data['updated_by'] = $currentUser->id;
+            $data['creator'] = $currentUser->real_name ?? $currentUser->username; // 设置创建人姓名
+            $data['updater'] = $currentUser->real_name ?? $currentUser->username; // 设置更新人姓名
 
             // 设置时间戳
             $data['created_at'] = now();
             $data['updated_at'] = now();
+            $data['create_date'] = now()->format('Y-m-d'); // 设置创建日期
+            $data['create_time'] = now()->format('H:i:s'); // 设置创建时间
+            $data['update_time'] = now()->format('Y-m-d H:i:s'); // 设置更新时间
 
             $customer = Customer::create($data);
 
@@ -2971,7 +2979,7 @@ class CustomerController extends Controller
                 'case_status' => ContractCaseRecord::STATUS_COMPLETED // 设置为已完成状态，表示已立项，不再显示在待立项列表中
             ]);
 
-            \Log::info('立项成功', [
+            Log::info('立项成功', [
                 'record_id' => $record->id,
                 'case_id' => $case->id,
                 'old_status' => ContractCaseRecord::STATUS_TO_BE_FILED,
@@ -2992,7 +3000,7 @@ class CustomerController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('创建项目失败: ' . $e->getMessage());
+            Log::error('创建项目失败: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -3100,7 +3108,7 @@ class CustomerController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('撤销立项失败: ' . $e->getMessage());
+            Log::error('撤销立项失败: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
