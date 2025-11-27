@@ -282,7 +282,7 @@ Route::group(['namespace' => 'Api'], function () {
 
     // 基础CRUD路由放在最后
     Route::get('/test-customers', 'CustomerController@index')->name('api.test.customers.index');// 获取客户列表
-    Route::post('/test-customers', 'CustomerController@store')->name('api.test.customers.store');// 创建客户
+    // Route::post('/test-customers', 'CustomerController@store')->name('api.test.customers.store');// 创建客户 - 已移至认证区域避免冲突
     Route::get('/test-customers/{id}', 'CustomerController@show')->name('api.test.customers.show');// 获取客户详情
     Route::put('/test-customers/{id}', 'CustomerController@update')->name('api.test.customers.update');// 更新客户信息
     Route::delete('/test-customers/{id}', 'CustomerController@destroy')->name('api.test.customers.destroy');// 删除客户
@@ -335,7 +335,6 @@ Route::group(['namespace' => 'Api'], function () {
 
     // 基础路由放在最后
     Route::get('/customers', 'CustomerController@index')->name('api.customers.index');// 获取客户列表
-    Route::post('/customers', 'CustomerController@store')->name('api.customers.store');// 创建客户
     Route::get('/customers/{id}', 'CustomerController@show')->name('api.customers.show');// 获取客户详情
     Route::put('/customers/{id}', 'CustomerController@update')->name('api.customers.update');// 更新客户信息
     Route::delete('/customers/{id}', 'CustomerController@destroy')->name('api.customers.destroy');// 删除客户
@@ -434,7 +433,7 @@ Route::group(['namespace' => 'Api'], function () {
 
     // 用户和客户API（临时移到公开路由用于测试）
     Route::get('/users', 'UserController@index')->name('api.users.index.public');// 获取用户列表（公开）
-    Route::get('/customers', 'CustomerController@index')->name('api.customers.index.public');// 获取客户列表（公开）
+    // Route::get('/customers', 'CustomerController@index')->name('api.customers.index.public');// 获取客户列表（公开）- 与第337行重复，移除以避免冲突
 
     // 分配管理（临时移到公开路由用于测试）
     Route::get('/assignment/new-applications', 'AssignmentController@newApplications')->name('api.assignment.new.applications');// 获取新申请待分配列表
@@ -582,6 +581,11 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
 
 
 
+    // 客户管理（需要认证）
+    Route::group(['middleware' => ['auth:sanctum']], function () {
+        Route::post('/customers', 'CustomerController@store')->name('api.customers.store');// 创建客户
+    });
+    
     // 客户管理（这些路由已移到公开区域，这里保留合同管理路由）
     // 合同管理 - 新的合同管理系统
     Route::get('/contracts', 'ContractController@index')->name('api.contracts.index');// 获取合同列表
