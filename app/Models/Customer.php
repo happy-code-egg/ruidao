@@ -40,7 +40,8 @@ class Customer extends Model
         'website',                      // 公司网站
         'business_scope',               // 经营范围
         'company_type',                 // 公司类型
-        'business_person_id',           // 业务人员ID
+        'business_person_id',           // 业务人员ID（关联users表）
+        'business_person',              // 业务人员姓名（与business_person_id对应的用户真实姓名）
         'business_assistant_id',        // 业务助理ID
         'business_partner_id',          // 业务协作人ID
         'company_manager_id',           // 公司负责人ID
@@ -241,7 +242,7 @@ class Customer extends Model
         'innovation_index' => 'integer',                // 创新指数转换为整数
         'price_index' => 'integer',                     // 价格指数转换为整数
         'level' => 'integer',                           // 等级转换为整数
-        'business_person' => 'integer',                 // 业务人员转换为整数
+        'business_person' => 'string',                    // 业务人员姓名字段（字符串类型）
         // 日期字段
         'jinxin_verify_date' => 'date',                 // 金信认证日期转换为日期
         'science_verify_date' => 'date',                // 科技认证日期转换为日期
@@ -539,7 +540,11 @@ class Customer extends Model
     public function businessPersons()
     {
         return $this->hasMany(CustomerRelatedPerson::class, 'customer_id')
-                    ->where('person_type', '业务员')
+                    ->where(function($query) {
+                        // 兼容新旧数据：要么relationship是业务人员，要么person_type是业务员
+                        $query->where('relationship', '业务人员')
+                              ->orWhere('person_type', '业务员');
+                    })
                     ->with('relatedBusinessPerson');
     }
 

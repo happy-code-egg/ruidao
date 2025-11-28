@@ -297,6 +297,7 @@ Route::group(['namespace' => 'Api'], function () {
     Route::get('/customers/download-template', 'CustomerController@downloadTemplate')->name('api.customers.download.template');// 下载导入模板
     Route::post('/customers/import', 'CustomerController@import')->name('api.customers.import');// 导入客户数据
     Route::post('/customers/batch-transfer-business', 'CustomerController@batchTransferBusiness')->name('api.customers.batch.transfer.business');// 批量转移客户业务
+    Route::post('/customers/batch-replace-business', 'CustomerController@batchReplaceBusiness')->name('api.customers.batch.replace.business');// 批量替换业务人员
     Route::post('/customers/batch-add-business', 'CustomerController@batchAddBusiness')->name('api.customers.batch.add.business');// 批量添加业务人员
     Route::post('/customers/transfer', 'CustomerController@transfer')->name('api.customers.transfer');// 转移客户
     Route::post('/customers/move-to-public', 'CustomerController@moveToPublic')->name('api.customers.move.to.public');// 移入公海

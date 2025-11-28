@@ -13,6 +13,7 @@ use App\Models\InnovationIndices;
 use App\Models\PriceIndices;
 use App\Models\ContractCaseRecord;
 use App\Models\Cases;
+use App\Models\CustomerRelatedPerson;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
@@ -174,7 +175,7 @@ class CustomerController extends Controller
                     $query->where(function($q) use ($businessPersonIds) {
                         $q->whereIn('business_person_id', $businessPersonIds)
                           ->orWhereHas('relatedPersons', function($subQ) use ($businessPersonIds) {
-                              $subQ->where('person_type', '业务员')
+                              $subQ->where('relationship', '业务人员')
                                    ->whereIn('related_business_person_id', $businessPersonIds);
                           });
                     });
@@ -183,7 +184,7 @@ class CustomerController extends Controller
                     $query->where(function($q) use ($businessPersonIds) {
                         $q->where('business_person_id', $businessPersonIds)
                           ->orWhereHas('relatedPersons', function($subQ) use ($businessPersonIds) {
-                              $subQ->where('person_type', '业务员')
+                              $subQ->where('relationship', '业务人员')
                                    ->where('related_business_person_id', $businessPersonIds);
                           });
                     });
@@ -419,9 +420,9 @@ class CustomerController extends Controller
             $page = $request->get('page', 1);
 
             // 确保加载关联数据，包括业务员列表
-            $customers = $query->with(['customerLevel', 'customerScale', 'businessPersons'])
-                ->orderBy('id', 'desc')
-                ->paginate($pageSize, ['*'], 'page', $page);
+        $customers = $query->with(['customerLevel', 'customerScale', 'businessPersons', 'businessPersons.relatedBusinessPerson'])
+            ->orderBy('id', 'desc')
+            ->paginate($pageSize, ['*'], 'page', $page);
 
 
 
@@ -603,7 +604,18 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
+            // 先处理字段映射，确保验证器能正确验证前端字段
+            $data = $request->all();
+            
+            // 处理信用代码映射（前端的creditCode字段映射到credit_code）
+            if (isset($data['creditCode']) && !isset($data['credit_code'])) {
+                $data['credit_code'] = $data['creditCode'];
+            }
+            
+            // 注意：不再处理businessPerson到business_person_id的字段映射
+            // 所有的业务员信息都通过customer_related_persons表来管理
+
+            $validator = Validator::make($data, [
                 // 基本信息验证
                 'name' => 'required|string|max:200',
                 'customer_name' => 'nullable|string|max:200',
@@ -692,7 +704,8 @@ class CustomerController extends Controller
                 'customer_type' => 'nullable|integer|in:1,2,3',
                 'customer_level' => 'nullable|integer|in:1,2,3',
                 'customer_scale' => 'nullable|integer|in:1,2,3,4,5,6',
-                'business_person_id' => 'nullable|integer|exists:users,id',
+                'business_person_id' => 'nullable|integer|exists:users,id', // 用于接收前端传递的业务员ID，但不会存入customers表
+                'businessPerson' => 'nullable|integer|exists:users,id', // 前端驼峰命名也验证，但不会存入customers表
                 'business_assistant_id' => 'nullable|integer|exists:users,id',
                 'business_partner_id' => 'nullable|integer|exists:users,id',
                 'company_manager_id' => 'nullable|integer|exists:users,id',
@@ -719,19 +732,17 @@ class CustomerController extends Controller
                 ], 422);
             }
 
-            $data = $request->all();
-
+            // 使用已经处理过字段映射的数据
             // 字段映射处理（前端驼峰命名转后端下划线命名）
             $fieldMapping = [
                 // 基本信息
                 'name' => 'name', // 前端的name对应后端的name字段，customer_name作为别名
                 'nameEn' => 'name_en',
-                'creditCode' => 'credit_code', // 前端的creditCode对应后端的credit_code（信用代码）
                 'legalRepresentative' => 'legal_representative',
                 'companyManager' => 'company_manager',
                 'level' => 'level',
                 'employeeCount' => 'employee_count',
-                'businessPerson' => 'business_person_id',
+                // 注意：移除了businessPerson到business_person_id的映射，避免存入customers表
                 'businessAssistant' => 'business_assistant',
                 'businessPartner' => 'business_partner',
                 'priceIndex' => 'price_index',
@@ -876,11 +887,6 @@ class CustomerController extends Controller
                 $data['name'] = $data['customer_name'];
             }
 
-            // 处理信用代码映射（前端的creditCode字段映射到credit_code）
-            if (isset($data['creditCode'])) {
-                $data['credit_code'] = $data['creditCode'];
-            }
-
             // 总是生成新的客户编号（不依赖前端输入）
             $data['customer_code'] = $this->generateCustomerCode();
 
@@ -901,6 +907,30 @@ class CustomerController extends Controller
             $data['update_time'] = now()->format('Y-m-d H:i:s'); // 设置更新时间
 
             $customer = Customer::create($data);
+
+            // 如果在创建客户时指定了业务员，自动添加到相关人员表中，但不设置customers表的business_person相关字段
+            // 从原始请求数据中获取业务员ID，因为business_person_id字段已经不再映射到$data数组中
+            $businessPersonId = $request->input('businessPerson') ?? $request->input('business_person_id');
+            if ($businessPersonId) {
+                $user = \App\Models\User::find($businessPersonId);
+                if ($user) {
+                    \App\Models\CustomerRelatedPerson::create([
+                        'customer_id' => $customer->id,
+                        'related_business_person_id' => $businessPersonId,
+                        'person_name' => $user->real_name,
+                        'person_type' => '商务负责人',
+                        'position' => $user->position,
+                        'department' => $user->department_id ? \App\Models\Department::find($user->department_id)->department_name : null,
+                        'phone' => $user->phone,
+                        'email' => $user->email,
+                        'relationship' => '业务人员',
+                        'responsibility' => '负责客户主要业务',
+                        'is_active' => true,
+                        'created_by' => $currentUser->id,
+                        'updated_by' => $currentUser->id,
+                    ]);
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -937,24 +967,20 @@ class CustomerController extends Controller
      *   - legal_representative: string 法定代表人
      *   - level: integer 客户级别
      *   - scale: integer 客户规模
-     *   - business_person: integer 业务人员ID
-     *   - business_assistant: string 业务助理
-     *   - business_partner: string 业务合伙人
-     *   - company_manager: string 公司经理
      *   - contacts: array 联系人列表
      *   - applicants: array 申请人列表
      *   - inventors: array 发明人列表
      *   - opportunities: array 商机列表
      *   - contracts: array 合同列表
      *   - followupRecords: array 跟进记录列表
-     *   - relatedPersons: array 相关人员列表
+     *   - relatedPersons: array 相关人员列表（包含业务人员、业务助理、业务合伙人等）
+     *   - businessPersons: array 业务人员列表（通过customer_related_persons表获取）
      *   - files: array 文件列表
-     *   - businessPerson: object 业务人员信息
-     *   - businessAssistant: object 业务助理信息
-     *   - businessPartner: object 业务合伙人信息
      *   - companyManager: object 公司经理信息
      *   - creator: object 创建者信息
      *   - updater: object 更新者信息
+     * 
+     * 注意：现在业务人员信息通过customer_related_persons表获取，不再使用传统的business_person_id等字段
      */
     public function show($id)
     {
@@ -969,9 +995,7 @@ class CustomerController extends Controller
                 'followupRecords',  // 跟进记录
                 'relatedPersons',   // 相关人员
                 'files',           // 文件
-                'businessPerson',   // 业务人员
-                'businessAssistant', // 业务助理
-                'businessPartner',  // 业务合伙人
+                'businessPersons',  // 业务人员（通过相关人员表）
                 'companyManager',   // 公司经理
                 'creator',         // 创建者
                 'updater'          // 更新者
@@ -1006,9 +1030,9 @@ class CustomerController extends Controller
      * - company_manager: string 公司经理
      * - level: integer 客户级别
      * - employee_count: string 员工数量
-     * - business_person: integer 业务人员ID
-     * - business_assistant: string 业务助理
-     * - business_partner: string 业务合伙人
+     * - business_person: integer 业务人员ID（仅用于接收，不会存入customers表，通过customer_related_persons表管理）
+     * - business_assistant: string 业务助理（仅用于接收，不会存入customers表，通过customer_related_persons表管理）
+     * - business_partner: string 业务合伙人（仅用于接收，不会存入customers表，通过customer_related_persons表管理）
      * - price_index: integer 价格指数
      * - innovation_index: integer 创新指数
      * - contact_name: string 联系人姓名
@@ -1036,6 +1060,8 @@ class CustomerController extends Controller
      * - is_jinxin_verified: string 是否通过金信认证
      * - high_tech_enterprise: string 是否高新技术企业
      * - remark: string 备注
+     * 
+     * 注意：业务人员相关信息现在通过customer_related_persons表管理，不再直接存入customers表的business_person_id等字段
      * 
      * @return \Illuminate\Http\JsonResponse
      * 
@@ -1169,7 +1195,7 @@ class CustomerController extends Controller
                 'customer_type' => 'nullable|integer|in:1,2,3',
                 'customer_level' => 'nullable|integer|in:1,2,3',
                 'customer_scale' => 'nullable|integer|in:1,2,3,4,5,6',
-                'business_person_id' => 'nullable|integer|exists:users,id',
+                'business_person_id' => 'nullable|integer|exists:users,id', // 用于接收前端传递的业务员ID，但不会存入customers表
                 'business_assistant_id' => 'nullable|integer|exists:users,id',
                 'business_partner_id' => 'nullable|integer|exists:users,id',
                 'company_manager_id' => 'nullable|integer|exists:users,id',
@@ -1197,12 +1223,10 @@ class CustomerController extends Controller
                 // 基本信息
                 'name' => 'name',
                 'nameEn' => 'name_en',
-                'creditCode' => 'credit_code', // 前端的creditCode对应后端的credit_code（信用代码）
                 'legalRepresentative' => 'legal_representative',
                 'companyManager' => 'company_manager',
                 'level' => 'level',
                 'employeeCount' => 'employee_count',
-                'businessPerson' => 'business_person_id',
                 'businessAssistant' => 'business_assistant',
                 'businessPartner' => 'business_partner',
                 'priceIndex' => 'price_index',
@@ -1317,6 +1341,9 @@ class CustomerController extends Controller
             if (isset($data['creditCode'])) {
                 $data['credit_code'] = $data['creditCode'];
             }
+
+            // 注意：business_person_id和business_person字段不再存入customers表，相关信息通过customer_related_persons表管理
+            // 移除对business_person_id字段的处理，避免存入customers表
 
             // 更新时不修改客户编号（customer_code）
             unset($data['customer_code']);
@@ -1453,9 +1480,14 @@ class CustomerController extends Controller
             $customerIds = $request->customer_ids;
             $toUserId = $request->to_user_id;
             
+            // 获取目标用户的真实姓名
+            $targetUser = \App\Models\User::find($toUserId);
+            $businessPersonName = $targetUser ? $targetUser->real_name : '';
+            
             // 批量更新客户的业务人员
             Customer::whereIn('id', $customerIds)->update([
                 'business_person_id' => $toUserId,
+                'business_person' => $businessPersonName,  // 存储真实姓名
                 'updated_by' => auth()->id(),
                 'updated_at' => now(),
             ]);
@@ -1504,6 +1536,7 @@ class CustomerController extends Controller
             // 将客户的业务人员设为空，移入公海
             Customer::whereIn('id', $customerIds)->update([
                 'business_person_id' => null,
+                'business_person' => null,  // 同步清空业务人员姓名
                 'updated_by' => auth()->id(),
                 'updated_at' => now(),
             ]);
@@ -1550,8 +1583,13 @@ class CustomerController extends Controller
             // 如果选择了多个人员，取第一个作为业务人员
             $businessPersonId = $selectedPersons[0];
             
+            // 获取目标用户的真实姓名
+            $targetUser = \App\Models\User::find($businessPersonId);
+            $businessPersonName = $targetUser ? $targetUser->real_name : '';
+            
             Customer::whereIn('id', $customerIds)->update([
                 'business_person_id' => $businessPersonId,
+                'business_person' => $businessPersonName,  // 存储真实姓名
                 'updated_by' => auth()->id(),
                 'updated_at' => now(),
             ]);
@@ -1570,9 +1608,10 @@ class CustomerController extends Controller
     }
 
     /**
-     * 批量添加业务员
+     * 批量替换业务员（保持向后兼容性）
+     * 替换原有的业务员，而不是新增
      */
-    public function batchAddBusiness(Request $request)
+    public function batchReplaceBusiness(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -1594,26 +1633,168 @@ class CustomerController extends Controller
 
             $customerIds = $request->customer_ids;
             $selectedPersons = $request->selected_persons;
-            
-            // 这里可以根据业务逻辑选择如何分配多个人员
-            // 暂时将第一个设为业务人员，第二个设为助理，第三个设为协作人
-            $updateData = ['updated_by' => auth()->id(), 'updated_at' => now()];
-            
-            if (isset($selectedPersons[0])) {
-                $updateData['business_person_id'] = $selectedPersons[0];
-            }
-            if (isset($selectedPersons[1])) {
-                $updateData['business_assistant_id'] = $selectedPersons[1];
-            }
-            if (isset($selectedPersons[2])) {
-                $updateData['business_partner_id'] = $selectedPersons[2];
-            }
-            
-            Customer::whereIn('id', $customerIds)->update($updateData);
+            $syncCaseBusiness = $request->input('sync_case_business', false);
+            $syncContractBusiness = $request->input('sync_contract_business', false);
 
+            DB::beginTransaction();
+
+            try {
+                // 更新客户表
+                $updateData = [];
+                
+                // 将selected_persons数组中的值分配给不同的业务员字段
+                if (isset($selectedPersons[0])) {
+                    $updateData['business_person_id'] = $selectedPersons[0];
+                }
+                if (isset($selectedPersons[1])) {
+                    $updateData['business_assistant_id'] = $selectedPersons[1];
+                }
+                if (isset($selectedPersons[2])) {
+                    $updateData['business_partner_id'] = $selectedPersons[2];
+                }
+
+                // 批量更新客户
+                Customer::whereIn('id', $customerIds)->update($updateData);
+
+                // 同步更新案例和合同的业务员（如果指定）
+                if ($syncCaseBusiness || $syncContractBusiness) {
+                    foreach ($customerIds as $customerId) {
+                        if ($syncCaseBusiness) {
+                            // 同步更新案例业务员
+                            if (isset($selectedPersons[0])) {
+                                Cases::where('customer_id', $customerId)
+                                    ->update(['business_person_id' => $selectedPersons[0]]);
+                            }
+                        }
+                        
+                        if ($syncContractBusiness) {
+                            // 同步更新合同业务员
+                            if (isset($selectedPersons[0])) {
+                                \App\Models\Contract::where('customer_id', $customerId)
+                                    ->update(['business_person_id' => $selectedPersons[0]]);
+                            }
+                        }
+                    }
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => '批量替换业务员成功',
+                    'data' => [
+                        'updated_customers' => count($customerIds),
+                        'business_person_id' => $updateData['business_person_id'] ?? null,
+                        'business_assistant_id' => $updateData['business_assistant_id'] ?? null,
+                        'business_partner_id' => $updateData['business_partner_id'] ?? null
+                    ]
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollback();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '批量替换失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 批量添加业务员（新增模式）
+     * 将选中的业务员新增到客户的相关人员中，而不是替换原有业务员
+     */
+    public function batchAddBusiness(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'customer_ids' => 'required|array',
+                'customer_ids.*' => 'integer|exists:customers,id',
+                'selected_persons' => 'required|array',
+                'selected_persons.*' => 'integer|exists:users,id',
+                'person_type' => 'nullable|string|in:业务助理,业务协作人,商务负责人,其他',
+                'sync_case_business' => 'nullable|boolean',
+                'sync_contract_business' => 'nullable|boolean',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '验证失败',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $customerIds = $request->customer_ids;
+            $selectedPersons = $request->selected_persons;
+            $personType = $request->input('person_type', '商务负责人'); // 默认为商务负责人
+            $currentUserId = auth()->id();
+            
+            $addedCount = 0;
+            $skippedCount = 0;
+            
+            // 遍历每个客户
+            foreach ($customerIds as $customerId) {
+                // 获取客户信息
+                $customer = Customer::find($customerId);
+                if (!$customer) {
+                    $skippedCount++;
+                    continue;
+                }
+                
+                // 遍历每个选中的业务员
+                foreach ($selectedPersons as $personId) {
+                    // 检查该业务员是否已经关联到此客户
+                    $existingRelation = CustomerRelatedPerson::where('customer_id', $customerId)
+                        ->where('related_business_person_id', $personId)
+                        ->where('person_type', $personType)
+                        ->whereNull('deleted_at')
+                        ->first();
+                    
+                    if ($existingRelation) {
+                        // 已存在关系，跳过
+                        continue;
+                    }
+                    
+                    // 获取业务员信息
+                    $user = \App\Models\User::find($personId);
+                    if (!$user) {
+                        continue;
+                    }
+                    
+                    // 创建新的关联关系
+                    CustomerRelatedPerson::create([
+                        'customer_id' => $customerId,
+                        'related_business_person_id' => $personId,
+                        'person_name' => $user->real_name,
+                        'person_type' => $personType,
+                        'position' => $user->position,
+                        'department' => $user->department_id ? \App\Models\Department::find($user->department_id)->department_name : null,
+                        'phone' => $user->phone,
+                        'email' => $user->email,
+                        'relationship' => '业务人员',
+                        'responsibility' => '负责客户相关业务',
+                        'is_active' => true,
+                        'created_by' => $currentUserId,
+                        'updated_by' => $currentUserId,
+                    ]);
+                    
+                    $addedCount++;
+                }
+            }
+            
             return response()->json([
                 'success' => true,
-                'message' => '批量添加业务员成功'
+                'message' => '批量添加业务员成功',
+                'data' => [
+                    'added_count' => $addedCount,
+                    'skipped_count' => $skippedCount,
+                    'total_customers' => count($customerIds),
+                    'total_persons' => count($selectedPersons)
+                ]
             ]);
 
         } catch (\Exception $e) {
@@ -2508,6 +2689,30 @@ class CustomerController extends Controller
 
     /**
      * 获取客户业务员信息
+     * 
+     * 通过 customer_related_persons 表获取客户的业务人员信息，
+     * 支持单个客户或多个客户的批量查询。
+     * 
+     * 请求参数:
+     * - customer_id: int 单个客户ID（可选）
+     * - customer_ids: array 多个客户ID数组（可选）
+     * 
+     * 返回参数:
+     * - success: boolean 操作是否成功
+     * - data: array 业务人员列表
+     *   - id: int 用户ID
+     *   - name: string 姓名
+     *   - department: string 部门名称
+     *   - phone: string 电话
+     *   - email: string 邮箱
+     *   - type: string 人员类型（业务员）
+     *   - role: string 角色（业务人员）
+     * - message: string 操作消息
+     * 
+     * 注意事项:
+     * - 优先通过 customer_related_persons 表获取业务人员信息
+     * - 单个客户查询时，如果相关人员表中没有数据，会回退到传统字段
+     * - 多个客户查询时，仅使用相关人员表数据
      */
     public function getCustomerBusinessPersons(Request $request)
     {
@@ -2536,7 +2741,10 @@ class CustomerController extends Controller
                 // 从 customer_related_persons 表获取业务员
                 $relatedPersons = \App\Models\CustomerRelatedPerson::with(['relatedBusinessPerson.department'])
                     ->where('customer_id', $customerId)
-                    ->where('person_type', '业务员')
+                    ->where(function($query) {
+                        $query->where('relationship', '业务人员')
+                              ->orWhere('person_type', '业务员');
+                    })
                     ->get();
 
                 foreach ($relatedPersons as $person) {
@@ -2574,45 +2782,25 @@ class CustomerController extends Controller
                     }
                 }
             } else {
-                // 多个客户的情况，保持原有逻辑
-                $customers = Customer::whereIn('id', $customerIds)->get();
-                $userIds = [];
+                // 多个客户的情况，统一使用相关人员表逻辑
+                $relatedPersons = \App\Models\CustomerRelatedPerson::with(['relatedBusinessPerson.department'])
+                    ->whereIn('customer_id', $customerIds)
+                    ->where(function($query) {
+                        $query->where('relationship', '业务人员')
+                              ->orWhere('person_type', '业务员');
+                    })
+                    ->get();
 
-                foreach ($customers as $customer) {
-                    if ($customer->business_person_id) {
-                        $userIds[] = $customer->business_person_id;
-                    }
-                    if ($customer->business_assistant_id) {
-                        $userIds[] = $customer->business_assistant_id;
-                    }
-                    if ($customer->business_partner_id) {
-                        $userIds[] = $customer->business_partner_id;
-                    }
-                }
-
-                // 获取用户信息
-                $users = User::whereIn('id', array_unique($userIds))->get()->keyBy('id');
-
-                foreach ($customers as $customer) {
-                    if ($customer->business_person_id && isset($users[$customer->business_person_id])) {
+                foreach ($relatedPersons as $person) {
+                    if ($person->relatedBusinessPerson) {
                         $businessPersons[] = [
-                            'id' => $customer->business_person_id,
-                            'name' => $users[$customer->business_person_id]->real_name,
+                            'id' => $person->relatedBusinessPerson->id,
+                            'name' => $person->relatedBusinessPerson->real_name,
+                            'department' => $person->relatedBusinessPerson->department->department_name ?? '',
+                            'phone' => $person->relatedBusinessPerson->phone ?? '',
+                            'email' => $person->relatedBusinessPerson->email ?? '',
+                            'type' => '业务员',
                             'role' => '业务人员'
-                        ];
-                    }
-                    if ($customer->business_assistant_id && isset($users[$customer->business_assistant_id])) {
-                        $businessPersons[] = [
-                            'id' => $customer->business_assistant_id,
-                            'name' => $users[$customer->business_assistant_id]->real_name,
-                            'role' => '业务助理'
-                        ];
-                    }
-                    if ($customer->business_partner_id && isset($users[$customer->business_partner_id])) {
-                        $businessPersons[] = [
-                            'id' => $customer->business_partner_id,
-                            'name' => $users[$customer->business_partner_id]->real_name,
-                            'role' => '业务伙伴'
                         ];
                     }
                 }
@@ -2887,21 +3075,20 @@ class CustomerController extends Controller
     {
         $businessPersons = [];
 
-        // 从 customer_related_persons 表获取业务员
-        if ($customer->businessPersons && $customer->businessPersons->count() > 0) {
-            foreach ($customer->businessPersons as $relation) {
-                if ($relation->relatedBusinessPerson) {
-                    $businessPersons[] = $relation->relatedBusinessPerson->real_name;
-                }
+        // 从 customer_related_persons 表获取业务员 - 只查询relationship为业务人员
+        $relatedPersons = \App\Models\CustomerRelatedPerson::where('customer_id', $customer->id)
+            ->where('relationship', '业务人员')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        // 使用person_name字段作为业务人员姓名
+        foreach ($relatedPersons as $relation) {
+            if (!empty($relation->person_name)) {
+                $businessPersons[] = $relation->person_name;
             }
         }
 
-        // 如果没有从关联表找到，则使用传统字段
-        if (empty($businessPersons) && $customer->businessPerson) {
-            $businessPersons[] = $customer->businessPerson->real_name;
-        }
-
-        return implode(', ', $businessPersons);
+        return !empty($businessPersons) ? implode(', ', $businessPersons) : '';
     }
 
     /**

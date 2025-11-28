@@ -851,7 +851,10 @@ public function addCustomerBusinessPerson(Request $request)
             // 检查该业务员是否已关联到该客户
             $exists = CustomerRelatedPerson::where('customer_id', $customerId)
                 ->where('related_business_person_id', $personId)
-                ->where('person_type', '业务员')
+                ->where(function($query) {
+                    $query->where('relationship', '业务人员')
+                          ->orWhere('person_type', '业务员');
+                })
                 ->exists();
 
             // 如果不存在，则创建新的关联记录
@@ -864,7 +867,8 @@ public function addCustomerBusinessPerson(Request $request)
                         'customer_id' => $customerId,
                         'related_business_person_id' => $personId,
                         'person_name' => $user->real_name,
-                        'person_type' => '业务员',
+                        'person_type' => '商务负责人',
+                        'relationship' => '业务人员',
                         'phone' => $user->phone,
                         'email' => $user->email,
                         'department' => $user->department->department_name ?? '',
@@ -935,13 +939,16 @@ public function removeCustomerBusinessPerson(Request $request)
         // 删除业务员记录：删除该客户下指定业务员的业务员类型记录
         CustomerRelatedPerson::where('customer_id', $customerId)
             ->where('related_business_person_id', $businessPersonId)
-            ->where('person_type', '业务员')
+            ->where(function($query) {
+                $query->where('relationship', '业务人员')
+                      ->orWhere('person_type', '业务员');
+            })
             ->delete();
 
         // 同时删除该业务员的助理和协作人：删除该客户下指定业务员的助理和协作人类型记录
         CustomerRelatedPerson::where('customer_id', $customerId)
             ->where('related_business_person_id', $businessPersonId)
-            ->whereIn('person_type', ['业务助理', '业务协作人'])
+            ->whereIn('relationship', ['业务助理', '业务协作人'])
             ->delete();
 
         // 返回成功响应
