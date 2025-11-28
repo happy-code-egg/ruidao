@@ -1093,7 +1093,7 @@ Route::get('/test-workflow-config', function(\Illuminate\Http\Request $request) 
     Route::post('/contract-case-records', 'ContractCaseRecordController@store')->name('api.contract.case.records.store');// 创建合同项目记录
     Route::put('/contract-case-records/{id}', 'ContractCaseRecordController@update')->name('api.contract.case.records.update');// 更新合同项目记录
     Route::delete('/contract-case-records/{id}', 'ContractCaseRecordController@destroy')->name('api.contract.case.records.destroy');// 删除合同项目记录
-    Route::post('/contract-case-records/{id}/file', 'ContractCaseRecordController@file')->name('api.contract.case.records.file');// 上传合同项目记录文件
+    Route::post('/contract-case-records/{id}/file', 'ContractCaseRecordController@fileCase')->name('api.contract.case.records.file');// 上传合同项目记录文件
 
 });
 
