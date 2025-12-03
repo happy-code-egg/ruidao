@@ -590,7 +590,7 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
     // 客户管理（这些路由已移到公开区域，这里保留合同管理路由）
     // 合同管理 - 新的合同管理系统
     Route::get('/contracts', 'ContractController@index')->name('api.contracts.index');// 获取合同列表
-    Route::post('/contracts', 'ContractController@store')->name('api.contracts.store');// 创建合同
+    Route::post('/customer-contracts', 'ContractController@store')->name('api.contracts.store');// 创建合同
     Route::post('/contracts/export', 'ContractController@export')->name('api.contracts.export');// 导出合同数据
 
     // 合同工作流管理（特殊路由需要放在 {id} 路由之前）
@@ -641,6 +641,7 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
         Route::post('/cases/{id}/attachments', 'CaseAttachmentController@store')->name('api.cases.attachments.store');// 创建项目附件记录
         Route::post('/cases/{id}/attachments/upload', 'CaseAttachmentController@upload')->name('api.cases.attachments.upload');// 上传项目附件
         Route::delete('/case-attachments/{id}', 'CaseAttachmentController@destroy')->name('api.case.attachments.destroy');// 删除项目附件记录
+        Route::get('/cases/{caseId}/attachments/{attachmentId}/download', 'CaseAttachmentController@download')->name('api.cases.attachments.download');//下载项目附件
 
         // 个人项目管理
         Route::get('/personal-cases', 'PersonalCaseController@index')->name('api.personal.cases.index');// 获取个人项目列表

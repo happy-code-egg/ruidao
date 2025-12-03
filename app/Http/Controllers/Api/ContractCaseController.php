@@ -254,38 +254,43 @@ class ContractCaseController extends Controller
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException 当项目不存在时
      */
     public function show($id)
-    {
-        try {
-            // 查询项目详情，预加载所有相关联的模型数据
-            $case = Cases::with([
-                'customer',      // 客户信息
-                'contract',      // 合同信息
-                'businessPerson', // 业务负责人
-                'techLeader',    // 技术负责人
-                'agent',         // 代理人
-                'assistant',     // 助理
-                'creator',       // 创建者
-                'serviceFees',   // 服务费用记录
-                'officialFees',  // 官方费用记录
-                'attachments'    // 附件信息
-            ])->findOrFail($id); // 如果找不到记录会抛出ModelNotFoundException
+{
+    try {
+        // 查询项目详情，预加载所有相关联的模型数据
+        $case = Cases::with([
+            'customer',      // 客户信息
+            'contract',      // 合同信息
+            'businessPerson', // 业务负责人
+            'techLeader',    // 技术负责人
+            'agent',         // 代理人
+            'assistant',     // 助理
+            'creator',       // 创建者
+            'serviceFees',   // 服务费用记录
+            'officialFees',  // 官方费用记录
+            'attachments'    // 附件信息
+        ])->findOrFail($id); // 如果找不到记录会抛出ModelNotFoundException
 
-            // 返回成功响应，包含完整的项目数据
-            return response()->json([
-                'success' => true,
-                'message' => '获取成功',
-                'data' => $case  // 包含所有预加载关联数据的项目对象
-            ]);
+        // 修改状态为待立项 (2)
+        $case->case_status = Cases::STATUS_TO_BE_FILED;
+        $case->updated_by = auth()->id();
+        $case->save();
 
-        } catch (\Exception $e) {
-            // 异常处理：记录不存在或其他数据库错误
-            // 统一返回404状态码和友好的错误信息
-            return response()->json([
-                'success' => false,
-                'message' => '记录不存在'
-            ], 404);
-        }
+        // 返回成功响应，包含完整的项目数据
+        return response()->json([
+            'success' => true,
+            'message' => '获取成功',
+            'data' => $freshCase  // 使用重新查询的最新数据
+        ]);
+
+    } catch (\Exception $e) {
+        // 异常处理：记录不存在或其他数据库错误
+        // 统一返回404状态码和友好的错误信息
+        return response()->json([
+            'success' => false,
+            'message' => '记录不存在'
+        ], 404);
     }
+}
 
     /**
      * 创建项目

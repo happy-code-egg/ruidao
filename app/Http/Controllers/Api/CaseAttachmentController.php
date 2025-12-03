@@ -103,10 +103,24 @@ class CaseAttachmentController extends Controller
             $file = $request->file('file');
 
             // 生成唯一的文件名 - 使用时间戳+原文件名避免重复
-            $fileName = time() . '_' . $file->getClientOriginalName();
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+
+            // 检查存储目录是否存在，不存在则创建
+            $directory = 'cases/' . $caseId;
+            if (!Storage::disk('public')->exists($directory)) {
+                Storage::disk('public')->makeDirectory($directory);
+            }
 
             // 存储文件到指定目录 - 按项目ID分目录存储，使用public磁盘
-            $filePath = $file->storeAs('cases/' . $caseId, $fileName, 'public');
+            $filePath = $file->storeAs($directory, $fileName, 'public');
+
+            // 验证文件是否成功存储
+            if (!Storage::disk('public')->exists($filePath)) {
+                throw new \Exception('文件存储失败，请检查存储权限和磁盘空间');
+            }
+
+            // 获取文件的可访问URL
+            $fileUrl = Storage::disk('public')->url($filePath);
 
             // 创建附件记录 - 将文件信息保存到数据库
             $attachment = CaseAttachment::create([
@@ -119,22 +133,36 @@ class CaseAttachmentController extends Controller
                 'file_size' => $file->getSize(),         // 文件大小（字节）
             ]);
 
-            // 返回上传成功的响应
+            // 返回上传成功的响应 - 包含文件访问URL
             return response()->json([
                 'success' => true,
                 'message' => '上传成功',
-                'data' => $attachment
+                'data' => array_merge($attachment->toArray(), [
+                    'file_url' => $fileUrl,
+                    'storage_path' => storage_path('app/public/' . $filePath),
+                    'public_path' => public_path('storage/' . $filePath)
+                ])
             ]);
 
         } catch (\Exception $e) {
             // 异常处理 - 捕获并返回上传过程中的错误
+            \Log::error('文件上传失败', [
+                'case_id' => $caseId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => '上传失败：' . $e->getMessage()
+                'message' => '上传失败：' . $e->getMessage(),
+                'debug_info' => [
+                    'storage_linked' => file_exists(public_path('storage')),
+                    'storage_path' => storage_path('app/public'),
+                    'public_path' => public_path('storage')
+                ]
             ], 500);
         }
     }
-
 
     /**
     创建项目附件记录
@@ -192,6 +220,139 @@ class CaseAttachmentController extends Controller
         $att = CaseAttachment::findOrFail($id);
         $att->delete();
         return response()->json(['success' => true]);
+    }
+
+    /**
+    下载项目附件
+    功能说明：
+    根据项目ID和附件ID下载对应的附件文件
+    请求参数：
+    caseId（项目ID）：必填，整数，通过URL路径传入，指定附件所属的项目
+    attachmentId（附件ID）：必填，整数，通过URL路径传入，指定要下载的附件
+    返回参数：
+    成功：文件下载响应（二进制文件流）
+    失败：JSON错误响应
+    @param int $caseId 项目ID
+    @param int $attachmentId 附件ID
+    @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse 文件下载响应或错误JSON
+     */
+    public function download($caseId, $attachmentId)
+    {
+        try {
+            // 验证项目是否存在
+            $case = Cases::findOrFail($caseId);
+            
+            // 查找附件记录，确保附件属于指定项目
+            $attachment = CaseAttachment::where('case_id', $caseId)
+                                        ->where('id', $attachmentId)
+                                        ->first();
+            
+            if (!$attachment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '附件不存在或不属于指定项目'
+                ], 200);
+            }
+            
+            // 构建完整的文件路径
+            $filePath = storage_path('app/public/' . $attachment->file_path);
+            
+            // 检查文件是否存在
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '文件不存在或已被删除'
+                ], 200);
+            }
+            
+            // 验证文件可读性
+            if (!is_readable($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '文件无法读取，请检查文件权限'
+                ], 200);
+            }
+            
+            // 记录下载日志
+            \Log::info('附件下载成功', [
+                'case_id' => $caseId,
+                'attachment_id' => $attachmentId,
+                'file_name' => $attachment->file_name,
+                'file_size' => $attachment->file_size,
+                'file_path' => $attachment->file_path
+            ]);
+            
+            // 使用更直接的方式提供文件下载
+            // 清除所有已有的输出缓冲
+            ob_clean();
+            
+            // 获取文件扩展名并设置正确的Content-Type
+            $fileExtension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $contentType = 'application/octet-stream'; // 默认二进制流
+            
+            // 根据文件扩展名设置具体的Content-Type
+            $mimeTypes = [
+                'txt' => 'text/plain',
+                'pdf' => 'application/pdf',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'zip' => 'application/zip',
+                'rar' => 'application/x-rar-compressed'
+            ];
+            
+            if (isset($mimeTypes[$fileExtension])) {
+                $contentType = $mimeTypes[$fileExtension];
+            }
+            
+            // 设置必要的响应头
+            header('Content-Type: ' . $contentType);
+            header('Content-Disposition: attachment; filename="' . rawurlencode($attachment->file_name) . '"');
+            header('Content-Length: ' . filesize($filePath));
+            header('Cache-Control: private');
+            header('Pragma: private');
+            header('Expires: 0');
+            
+            // 输出文件内容
+            readfile($filePath);
+            
+            // 确保脚本终止执行
+            exit;
+            
+            // 这个return不会被执行，因为我们已经exit了
+            return response();
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::error('项目不存在', [
+                'case_id' => $caseId,
+                'attachment_id' => $attachmentId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => '项目不存在'
+            ], 200);
+            
+        } catch (\Exception $e) {
+            \Log::error('附件下载失败', [
+                'case_id' => $caseId,
+                'attachment_id' => $attachmentId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => '下载失败：' . $e->getMessage()
+            ], 200);
+        }
     }
 }
 

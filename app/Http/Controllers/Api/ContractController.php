@@ -1196,28 +1196,126 @@ class ContractController extends Controller
         try {
             // 查找指定ID的合同记录，如果不存在则抛出404异常
             $contract = Contract::findOrFail($id);
-            // 查找合同下指定ID的附件记录，如果不存在则抛出404异常
-            $attachment = $contract->attachments()->findOrFail($attachmentId);
-
-            // 检查文件是否存在
-            if (!$attachment->file_path || !Storage::disk('public')->exists($attachment->file_path)) {
+            
+            // 查找合同下指定ID的附件记录，确保附件属于指定合同
+            $attachment = $contract->attachments()->find($attachmentId);
+            
+            if (!$attachment) {
                 return response()->json([
                     'success' => false,
-                    'message' => '文件不存在'
-                ], 404);
+                    'message' => '附件不存在或不属于指定合同'
+                ], 200);
+            }
+
+            // 检查文件路径是否存在
+            if (!$attachment->file_path) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '文件路径不存在'
+                ], 200);
+            }
+            
+            // 检查文件是否存在
+            if (!Storage::disk('public')->exists($attachment->file_path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '文件不存在或已被删除'
+                ], 200);
             }
 
             // 构建文件的完整路径
             $filePath = storage_path('app/public/' . $attachment->file_path);
+            
+            // 验证文件可读性
+            if (!is_readable($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '文件无法读取，请检查文件权限'
+                ], 200);
+            }
+            
+            // 记录下载日志
+            \Log::info('合同附件下载成功', [
+                'contract_id' => $id,
+                'attachment_id' => $attachmentId,
+                'file_name' => $attachment->file_name,
+                'file_size' => $attachment->file_size ?? 0,
+                'file_path' => $attachment->file_path
+            ]);
+            
             // 返回文件下载响应，使用原始文件名
-            return response()->download($filePath, $attachment->file_name);
+            // 使用更直接的方式提供文件下载
+            // 清除所有已有的输出缓冲
+            ob_clean();
+            
+            // 获取文件扩展名并设置正确的Content-Type
+            $fileExtension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $contentType = 'application/octet-stream'; // 默认二进制流
+            
+            // 根据文件扩展名设置具体的Content-Type
+            $mimeTypes = [
+                'txt' => 'text/plain',
+                'pdf' => 'application/pdf',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'zip' => 'application/zip',
+                'rar' => 'application/x-rar-compressed'
+            ];
+            
+            if (isset($mimeTypes[$fileExtension])) {
+                $contentType = $mimeTypes[$fileExtension];
+            }
+            
+            // 设置必要的响应头
+            header('Content-Type: ' . $contentType);
+            header('Content-Disposition: attachment; filename="' . rawurlencode($attachment->file_name) . '"');
+            header('Content-Length: ' . filesize($filePath));
+            header('Cache-Control: private');
+            header('Pragma: private');
+            header('Expires: 0');
+            
+            // 输出文件内容
+            readfile($filePath);
+            
+            // 确保脚本终止执行
+            exit;
+            
+            // 这个return不会被执行，因为我们已经exit了
+            return response();
 
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::error('合同不存在', [
+                'contract_id' => $id,
+                'attachment_id' => $attachmentId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => '合同不存在'
+            ], 200);
+            
         } catch (\Exception $e) {
+            // 记录详细错误日志
+            \Log::error('合同附件下载失败', [
+                'contract_id' => $id,
+                'attachment_id' => $attachmentId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
             // 返回错误响应，包含具体错误信息
             return response()->json([
                 'success' => false,
                 'message' => '下载失败：' . $e->getMessage()
-            ], 500);
+            ], 200);
         }
     }
 
