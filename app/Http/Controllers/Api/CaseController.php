@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Models\Cases;
+use App\Models\CaseTicket;
+use App\Models\CaseAttachment;
 
 /**
  * 案例控制器
@@ -298,7 +301,7 @@ class CaseController extends Controller
     remarks（备注）：字符串，其他补充说明信息
     返回参数：
     success（操作状态）：布尔值，true 表示成功，false 表示失败
-    message（提示信息）：字符串，返回 "创建成功"“验证失败” 或 “创建失败 + 具体错误信息”
+    message（提示信息）：字符串，返回 "创建成功"“验证失败” 或 "创建失败 + 具体错误信息"
     errors（错误信息）：对象，验证失败时返回具体字段的错误详情（仅验证失败时存在）
     data（创建结果）：对象，创建成功时返回新案例的 ID，格式为 ["id" => 案例 ID]
     错误状态码：
@@ -433,7 +436,7 @@ class CaseController extends Controller
     remarks（备注）：字符串，其他补充说明信息
     返回参数：
     success（操作状态）：布尔值，true 表示成功，false 表示失败
-    message（提示信息）：字符串，返回 "更新成功"“案例不存在”“验证失败” 或 “更新失败 + 具体错误信息”
+    message（提示信息）：字符串，返回 "更新成功"“案例不存在”“验证失败” 或 "更新失败 + 具体错误信息"
     errors（错误信息）：对象，验证失败时返回具体字段的错误详情（仅验证失败时存在）
     错误状态码：
     404：指定 ID 的案例不存在或已软删除
@@ -536,7 +539,7 @@ class CaseController extends Controller
     路径参数：id（案例 ID）：必填，整数，案例的唯一标识 ID，用于指定待删除的案例
     返回参数：
     success（操作状态）：布尔值，true 表示成功，false 表示失败
-    message（提示信息）：字符串，返回 "删除成功"“案例不存在” 或 “删除失败 + 具体错误信息”
+    message（提示信息）：字符串，返回 "删除成功"“案例不存在” 或 "删除失败 + 具体错误信息"
     错误状态码：
     404：指定 ID 的案例不存在或已软删除
     500：服务器内部错误（如数据库更新异常等）
@@ -649,5 +652,594 @@ class CaseController extends Controller
         ];
 
         return $statusMap[$status] ?? (int)$status;
+    }
+
+    /**
+     * 上传案件管票
+     * 功能说明：
+     * 处理案件管票上传请求，保存管票文件及相关信息到数据库
+     * 包含文件验证、存储、数据库记录创建等功能
+     *
+     * 请求参数：
+     * - caseId (路径参数): 项目/案件ID
+     * - project_no (FormData): 项目编号（必填）
+     * - application_no (FormData): 申请号（必填）
+     * - project_name (FormData): 项目名称（必填）
+     * - ticket_type (FormData): 管票类型（必填）
+     *   - 可选值：official_fee（官费票据）、agent_fee（代理费票据）、other_fee（其他费用票据）
+     * - ticket_amount (FormData): 票据金额（必填，数字）
+     * - files (FormData): 票据文件（必填，支持多文件，最多5个）
+     * - remark (FormData, 可选): 备注
+     *
+     * @param Request $request HTTP请求对象
+     * @param int $caseId 案件ID
+     * @return \Illuminate\Http\JsonResponse JSON响应对象
+     */
+    public function uploadTicket(Request $request, $caseId)
+    {
+        try {
+            $case = Cases::find($caseId);
+            if (!$case) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '指定的案件不存在'
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'project_no' => 'required|string|max:100',
+                'application_no' => 'required|string|max:100',
+                'project_name' => 'required|string|max:200',
+                'ticket_type' => 'required|string|in:official_fee,agent_fee,other_fee',
+                'ticket_amount' => 'required|numeric|min:0',
+                'files' => 'nullable|array|max:5',
+                'files.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx|max:10240',
+                'remark' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '参数验证失败',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            DB::beginTransaction();
+            try {
+                $updateData = [
+                    'project_no' => $request->project_no,
+                    'application_no' => $request->application_no,
+                    'case_name' => $request->project_name,
+                    'updated_by' => auth()->id() ?? 1,
+                ];
+
+                switch ($request->ticket_type) {
+                    case 'official_fee':
+                        $updateData['official_fee'] = $request->ticket_amount;
+                        break;
+                    case 'agent_fee':
+                        $updateData['service_fee'] = $request->ticket_amount;
+                        break;
+                    default:
+                        $updateData['actual_cost'] = $request->ticket_amount;
+                        break;
+                }
+
+                if (!empty($request->remark)) {
+                    $updateData['remarks'] = trim(($case->remarks ? $case->remarks . "\n" : '') . '【票据】' . $request->ticket_type . ' 金额 ' . $request->ticket_amount . '：' . $request->remark);
+                }
+
+                $case->fill($updateData);
+                $case->save();
+
+                $filesCount = $request->hasFile('files') ? count($request->file('files')) : 0;
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => '管票上传成功',
+                    'data' => [
+                        'case_id' => $caseId,
+                        'files_count' => $filesCount,
+                        'ticket_code' => $this->generateTicketCode($request->ticket_type)
+                    ]
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => '管票上传失败：' . $e->getMessage()
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '管票上传失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 生成管票编号
+     * 功能说明：
+     * 根据管票类型生成唯一的管票编号
+     * 格式：类型前缀 + 日期（Ymd） + 4位自增序号
+     *
+     * @param string $ticketType 管票类型
+     * @return string 管票编号
+     */
+    private function generateTicketCode($ticketType)
+    {
+        $prefixMap = [
+            'official_fee' => 'OF',
+            'agent_fee' => 'AF',
+            'other_fee' => 'OT'
+        ];
+
+        $prefix = $prefixMap[$ticketType] ?? 'TK';
+        $date = date('Ymd');
+
+        $millis = (int)(microtime(true) * 1000);
+        $number = str_pad((string)($millis % 10000), 4, '0', STR_PAD_LEFT);
+
+        return $prefix . $date . $number;
+    }
+
+    /**
+     * 获取取票码列表
+     *
+     * @param Request $request
+     * @param int $caseId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTicketCodes(Request $request, $caseId)
+    {
+        try {
+            $case = Cases::find($caseId);
+            if (!$case) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '指定的案件不存在'
+                ], 404);
+            }
+
+            $projectNo = $request->query('project_no');
+            $applicationNo = $request->query('application_no');
+            $status = $request->query('status');
+            $createStart = $request->query('create_time_start');
+            $createEnd = $request->query('create_time_end');
+            $useStart = $request->query('use_time_start');
+            $useEnd = $request->query('use_time_end');
+            $page = (int)$request->query('page', 1);
+            $pageSize = (int)$request->query('page_size', 20);
+
+            if ($projectNo && $projectNo !== $case->project_no) {
+                return response()->json([
+                    'success' => true,
+                    'data' => ['list' => [], 'total' => 0, 'page' => $page, 'page_size' => $pageSize]
+                ]);
+            }
+            if ($applicationNo && $applicationNo !== $case->application_no) {
+                return response()->json([
+                    'success' => true,
+                    'data' => ['list' => [], 'total' => 0, 'page' => $page, 'page_size' => $pageSize]
+                ]);
+            }
+
+            $typeMap = [
+                'official_fee' => ['display' => '官费票据', 'field' => 'official_fee'],
+                'agent_fee'    => ['display' => '代理费票据', 'field' => 'service_fee'],
+                'other_fee'    => ['display' => '其他费用票据', 'field' => 'actual_cost'],
+            ];
+
+            $items = [];
+            $seq = 1;
+            foreach ($typeMap as $type => $conf) {
+                $amount = $case->{$conf['field']};
+                if ($amount !== null && (float)$amount > 0) {
+                    $createAt = $case->updated_at ?: $case->created_at ?: now();
+                    $expireAt = (clone $createAt)->addDays(30);
+                    $entry = [
+                        'id' => (int)($caseId * 1000 + $seq),
+                        'ticket_code' => $this->generateTicketCode($type),
+                        'case_id' => (int)$caseId,
+                        'project_no' => $case->project_no,
+                        'application_no' => $case->application_no,
+                        'project_name' => $case->case_name,
+                        'ticket_type' => $type,
+                        'ticket_type_display' => $conf['display'],
+                        'amount' => (float)$amount,
+                        'status' => 'unused',
+                        'status_display' => '未使用',
+                        'create_time' => $createAt->format('Y-m-d H:i:s'),
+                        'use_time' => null,
+                        'expire_time' => $expireAt->format('Y-m-d H:i:s'),
+                        'creator' => optional(\App\Models\User::find($case->created_by))->name,
+                        'creator_id' => $case->created_by,
+                        'user' => null,
+                        'user_id' => null,
+                    ];
+                    $items[] = $entry;
+                    $seq++;
+                }
+            }
+
+            if ($status && $status !== 'unused') {
+                $items = [];
+            }
+
+            if ($createStart) {
+                $items = array_filter($items, function ($it) use ($createStart) {
+                    return $it['create_time'] >= $createStart . ' 00:00:00';
+                });
+            }
+            if ($createEnd) {
+                $items = array_filter($items, function ($it) use ($createEnd) {
+                    return $it['create_time'] <= $createEnd . ' 23:59:59';
+                });
+            }
+
+            if ($useStart || $useEnd) {
+                $items = [];
+            }
+
+            $items = array_values($items);
+            $total = count($items);
+            $page = max(1, $page);
+            $pageSize = max(1, $pageSize);
+            $offset = ($page - 1) * $pageSize;
+            $list = array_slice($items, $offset, $pageSize);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'list' => $list,
+                    'total' => $total,
+                    'page' => $page,
+                    'page_size' => $pageSize,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '获取取票码列表失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 获取管票列表
+     *
+     * @param Request $request
+     * @param int $caseId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTickets(Request $request, $caseId)
+    {
+        try {
+            $case = Cases::find($caseId);
+            if (!$case) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '指定的案件不存在'
+                ], 404);
+            }
+
+            $ticketType = $request->query('ticket_type');
+            $page = (int)$request->query('page', 1);
+            $pageSize = (int)$request->query('page_size', 20);
+
+            $typeMap = [
+                'official_fee' => ['display' => '官费票据', 'field' => 'official_fee'],
+                'agent_fee'    => ['display' => '代理费票据', 'field' => 'service_fee'],
+                'other_fee'    => ['display' => '其他费用票据', 'field' => 'actual_cost'],
+            ];
+
+            $tickets = [];
+            $seq = 1;
+            foreach ($typeMap as $type => $conf) {
+                $amount = $case->{$conf['field']};
+                if ($amount !== null && (float)$amount > 0) {
+                    $files = [];
+                    $attachments = \App\Models\CaseAttachment::where('case_id', $caseId)
+                        ->where('file_type', 'ticket')
+                        ->when($ticketType, function ($q) use ($type) {
+                            $q->where('file_sub_type', $type);
+                        })
+                        ->get();
+                    foreach ($attachments as $att) {
+                        $files[] = [
+                            'id' => $att->id,
+                            'file_name' => $att->file_name,
+                            'file_url' => \Illuminate\Support\Facades\Storage::disk('public')->url($att->file_path),
+                        ];
+                    }
+
+                    $tickets[] = [
+                        'id' => $caseId * 10 + $seq,
+                        'case_id' => (int)$caseId,
+                        'project_no' => $case->project_no,
+                        'application_no' => $case->application_no,
+                        'project_name' => $case->case_name,
+                        'ticket_type' => $type,
+                        'ticket_type_display' => $typeMap[$type]['display'],
+                        'ticket_amount' => (float)$amount,
+                        'files' => $files,
+                        'remark' => $case->remarks,
+                        'created_at' => optional($case->created_at)->format('Y-m-d H:i:s'),
+                        'creator' => optional(\App\Models\User::find($case->created_by))->name,
+                        'creator_id' => $case->created_by,
+                    ];
+                    $seq++;
+                }
+            }
+
+            if ($ticketType && isset($typeMap[$ticketType])) {
+                $tickets = array_values(array_filter($tickets, function ($t) use ($ticketType) {
+                    return $t['ticket_type'] === $ticketType;
+                }));
+            }
+
+            $total = count($tickets);
+            $page = max(1, $page);
+            $pageSize = max(1, $pageSize);
+            $offset = ($page - 1) * $pageSize;
+            $list = array_slice($tickets, $offset, $pageSize);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'list' => $list,
+                    'total' => $total,
+                    'page' => $page,
+                    'page_size' => $pageSize,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '获取管票列表失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function generateCaseTicketCode(Request $request, $caseId)
+    {
+        try {
+            $case = Cases::find($caseId);
+            if (!$case) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '指定的案件不存在'
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'project_no' => 'required|string|max:100',
+                'application_no' => 'required|string|max:100',
+                'project_name' => 'required|string|max:200',
+                'ticket_type' => 'required|string|in:official_fee,agent_fee,other_fee',
+                'amount' => 'required|numeric|min:0',
+                'expire_days' => 'nullable|integer|min:1'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '参数验证失败',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            DB::beginTransaction();
+            try {
+                $updateData = [
+                    'project_no' => $request->project_no,
+                    'application_no' => $request->application_no,
+                    'case_name' => $request->project_name,
+                    'updated_by' => auth()->id() ?? 1,
+                ];
+
+                switch ($request->ticket_type) {
+                    case 'official_fee':
+                        $updateData['official_fee'] = $request->amount;
+                        break;
+                    case 'agent_fee':
+                        $updateData['service_fee'] = $request->amount;
+                        break;
+                    default:
+                        $updateData['actual_cost'] = $request->amount;
+                        break;
+                }
+
+                $case->fill($updateData);
+                $case->save();
+
+                $expireDays = (int)$request->input('expire_days', 30);
+                $code = $this->generateTicketCode($request->ticket_type);
+                $expireTime = now()->addDays($expireDays)->format('Y-m-d H:i:s');
+
+                $seqMap = ['official_fee' => 1, 'agent_fee' => 2, 'other_fee' => 3];
+                $id = (int)($caseId * 1000 + $seqMap[$request->ticket_type]);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => '取票码生成成功',
+                    'data' => [
+                        'id' => $id,
+                        'ticket_code' => $code,
+                        'expire_time' => $expireTime
+                    ]
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => '取票码生成失败：' . $e->getMessage()
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '取票码生成失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getTicketCodeDetail(Request $request, $caseId, $ticketCodeId)
+    {
+        try {
+            $case = Cases::find($caseId);
+            if (!$case) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '指定的案件不存在'
+                ], 404);
+            }
+
+            $typeMap = [
+                'official_fee' => ['display' => '官费票据', 'field' => 'official_fee'],
+                'agent_fee'    => ['display' => '代理费票据', 'field' => 'service_fee'],
+                'other_fee'    => ['display' => '其他费用票据', 'field' => 'actual_cost'],
+            ];
+
+            $seq = 1;
+            foreach ($typeMap as $type => $conf) {
+                $amount = $case->{$conf['field']};
+                if ($amount !== null && (float)$amount > 0) {
+                    $id = (int)($caseId * 1000 + $seq);
+                    if ($id === (int)$ticketCodeId) {
+                        $createAt = $case->updated_at ?: $case->created_at ?: now();
+                        $expireAt = (clone $createAt)->addDays(30);
+
+                        $item = [
+                            'id' => $id,
+                            'ticket_code' => $this->generateTicketCode($type),
+                            'case_id' => (int)$caseId,
+                            'project_no' => $case->project_no,
+                            'application_no' => $case->application_no,
+                            'project_name' => $case->case_name,
+                            'ticket_type' => $type,
+                            'ticket_type_display' => $conf['display'],
+                            'amount' => (float)$amount,
+                            'status' => 'unused',
+                            'status_display' => '未使用',
+                            'create_time' => $createAt->format('Y-m-d H:i:s'),
+                            'use_time' => null,
+                            'expire_time' => $expireAt->format('Y-m-d H:i:s'),
+                            'creator' => optional(\App\Models\User::find($case->created_by))->name,
+                            'creator_id' => $case->created_by,
+                            'user' => null,
+                            'user_id' => null,
+                        ];
+
+                        return response()->json([
+                            'success' => true,
+                            'data' => $item
+                        ]);
+                    }
+                    $seq++;
+                }
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => '未找到取票码'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '获取取票码详情失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+
+
+    
+    public function downloadTicketCode(Request $request, $caseId, $ticketCodeId)
+    {
+        try {
+            $case = Cases::find($caseId);
+            if (!$case) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '指定的案件不存在'
+                ], 404);
+            }
+
+            $typeMap = [
+                'official_fee' => ['display' => '官费票据', 'field' => 'official_fee'],
+                'agent_fee'    => ['display' => '代理费票据', 'field' => 'service_fee'],
+                'other_fee'    => ['display' => '其他费用票据', 'field' => 'actual_cost'],
+            ];
+
+            $foundType = null;
+            $amount = 0.0;
+
+            if (ctype_digit((string)$ticketCodeId)) {
+                $seq = ((int)$ticketCodeId) % 1000;
+                $seqMap = [1 => 'official_fee', 2 => 'agent_fee', 3 => 'other_fee'];
+                $foundType = $seqMap[$seq] ?? null;
+            } else {
+                $prefix = substr((string)$ticketCodeId, 0, 2);
+                $prefixMap = ['OF' => 'official_fee', 'AF' => 'agent_fee', 'OT' => 'other_fee'];
+                $foundType = $prefixMap[$prefix] ?? null;
+            }
+
+            if (!$foundType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '未找到取票码'
+                ], 404);
+            }
+
+            $amount = (float)($case->{$typeMap[$foundType]['field']} ?? 0);
+
+            $attachment = \App\Models\CaseAttachment::where('case_id', $caseId)
+                ->where('file_type', 'ticket')
+                ->where('file_sub_type', $foundType)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($attachment) {
+                $fullPath = \Illuminate\Support\Facades\Storage::disk('public')->path($attachment->file_path);
+                if (is_file($fullPath)) {
+                    return response()->download($fullPath, $attachment->file_name);
+                }
+            }
+
+            $code = $this->generateTicketCode($foundType);
+            $img = imagecreatetruecolor(800, 400);
+            $white = imagecolorallocate($img, 255, 255, 255);
+            $black = imagecolorallocate($img, 0, 0, 0);
+            imagefilledrectangle($img, 0, 0, 800, 400, $white);
+            imagestring($img, 5, 20, 40, '取票码: ' . $code, $black);
+            imagestring($img, 5, 20, 80, '项目: ' . ($case->case_name ?? ''), $black);
+            imagestring($img, 5, 20, 120, '类型: ' . $typeMap[$foundType]['display'], $black);
+            imagestring($img, 5, 20, 160, '金额: ' . number_format($amount, 2), $black);
+            imagestring($img, 5, 20, 200, '生成时间: ' . now()->format('Y-m-d H:i:s'), $black);
+
+            ob_start();
+            imagepng($img);
+            $content = ob_get_clean();
+            imagedestroy($img);
+
+            $tmp = 'tickets/tmp/' . $code . '.png';
+            \Illuminate\Support\Facades\Storage::disk('public')->put($tmp, $content);
+            $tmpPath = \Illuminate\Support\Facades\Storage::disk('public')->path($tmp);
+            return response()->download($tmpPath, 'ticket-' . $code . '.png')->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '下载取票码失败：' . $e->getMessage()
+            ], 500);
+        }
     }
 }

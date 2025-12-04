@@ -641,7 +641,9 @@ Route::group(['middleware' => ['auth:sanctum'], 'namespace' => 'Api'], function 
         Route::post('/cases/{id}/attachments', 'CaseAttachmentController@store')->name('api.cases.attachments.store');// 创建项目附件记录
         Route::post('/cases/{id}/attachments/upload', 'CaseAttachmentController@upload')->name('api.cases.attachments.upload');// 上传项目附件
         Route::delete('/case-attachments/{id}', 'CaseAttachmentController@destroy')->name('api.case.attachments.destroy');// 删除项目附件记录
+        Route::delete('/cases/{caseId}/attachments/{attachmentId}', 'CaseAttachmentController@deleteAttachment')->name('api.cases.attachments.delete');// 删除项目附件
         Route::get('/cases/{caseId}/attachments/{attachmentId}/download', 'CaseAttachmentController@download')->name('api.cases.attachments.download');//下载项目附件
+        Route::get('/cases/{caseId}/attachments/{attachmentId}/preview', 'CaseAttachmentController@preview')->name('api.cases.attachments.preview');//预览项目附件
 
         // 个人项目管理
         Route::get('/personal-cases', 'PersonalCaseController@index')->name('api.personal.cases.index');// 获取个人项目列表
@@ -1247,3 +1249,11 @@ Route::post('/upload/invoice', function(\Illuminate\Http\Request $request) {
     Route::put('/fee-payments/{id}', 'Api\FeePaymentController@update')->name('api.fee-payments.update');
     // 删除缴费单
     Route::delete('/fee-payments/{id}', 'Api\FeePaymentController@destroy')->name('api.fee-payments.destroy');
+    // 案件管票管理
+    Route::get('/cases/{caseId}/tickets', 'Api\CaseController@getTickets')->name('api.cases.tickets.index');// 上传案件管票
+    Route::get('/cases/{caseId}/ticket-codes', 'Api\CaseController@getTicketCodes')->name('api.cases.ticket.codes.index');//  获取取票码列表
+    Route::get('/cases/{caseId}/ticket-codes/{ticketId}', 'Api\CaseController@getTicketCodeDetail')->name('api.cases.ticket.codes.show');// 获取取票码详情
+    Route::get('/cases/{caseId}/ticket-codes/{ticketCodeId}/download', 'Api\CaseController@downloadTicketCode')->name('api.cases.ticket.codes.download');// 下载取票码
+    Route::post('/cases/{caseId}/ticket-codes/generate', 'Api\CaseController@generateCaseTicketCode')->name('api.cases.ticket.codes.generate');// 生成取票码
+    Route::post('/cases/{caseId}/tickets', 'Api\CaseController@uploadTicket')->name('api.cases.tickets.upload');// 上传管票
+

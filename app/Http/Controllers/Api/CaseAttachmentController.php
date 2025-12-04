@@ -251,7 +251,7 @@ class CaseAttachmentController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => '附件不存在或不属于指定项目'
-                ], 200);
+                ], 500);
             }
             
             // 构建完整的文件路径
@@ -262,7 +262,7 @@ class CaseAttachmentController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => '文件不存在或已被删除'
-                ], 200);
+                ], 500);
             }
             
             // 验证文件可读性
@@ -270,7 +270,7 @@ class CaseAttachmentController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => '文件无法读取，请检查文件权限'
-                ], 200);
+                ], 500);
             }
             
             // 记录下载日志
@@ -318,6 +318,177 @@ class CaseAttachmentController extends Controller
             header('Pragma: private');
             header('Expires: 0');
             
+            // 设置必要的响应头
+            header('Content-Type: ' . $contentType);
+            header('Content-Disposition: attachment; filename="' . rawurlencode($attachment->file_name) . '"');
+            header('Content-Length: ' . filesize($filePath));
+            header('Cache-Control: private');
+            header('Pragma: private');
+            header('Expires: 0');
+            
+            // 输出文件内容
+            readfile($filePath);
+            
+            // 确保脚本终止执行
+            exit;
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::error('项目不存在', [
+                'case_id' => $caseId,
+                'attachment_id' => $attachmentId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => '项目不存在'
+            ], 500);
+            
+        } catch (\Exception $e) {
+            \Log::error('附件下载失败', [
+                'case_id' => $caseId,
+                'attachment_id' => $attachmentId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => '下载失败：' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+    预览项目附件
+    功能说明：
+    根据项目ID和附件ID提供附件文件的预览功能，支持在浏览器中直接查看文件内容
+    支持的文件类型：图片（jpg, jpeg, png, gif）、PDF、文本文件（txt, json, xml）等
+    请求参数：
+    caseId（项目ID）：必填，整数，通过URL路径传入，指定附件所属的项目
+    attachmentId（附件ID）：必填，整数，通过URL路径传入，指定要预览的附件
+    返回参数：
+    成功：文件预览响应（直接在浏览器中显示文件内容）
+    失败：JSON错误响应
+    @param int $caseId 项目ID
+    @param int $attachmentId 附件ID
+    @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse 文件预览响应或错误JSON
+     */
+    public function preview($caseId, $attachmentId)
+    {
+        try {
+            // 验证项目是否存在
+            $case = Cases::findOrFail($caseId);
+            
+            // 查找附件记录，确保附件属于指定项目
+            $attachment = CaseAttachment::where('case_id', $caseId)
+                                        ->where('id', $attachmentId)
+                                        ->first();
+            
+            if (!$attachment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '附件不存在或不属于指定项目'
+                ], 200);
+            }
+            
+            // 构建完整的文件路径
+            $filePath = storage_path('app/public/' . $attachment->file_path);
+            
+            // 检查文件是否存在
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '文件不存在或已被删除'
+                ], 200);
+            }
+            
+            // 验证文件可读性
+            if (!is_readable($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '文件无法读取，请检查文件权限'
+                ], 200);
+            }
+            
+            // 获取文件扩展名
+            $fileExtension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            
+            // 定义支持的预览文件类型及对应的MIME类型
+            $previewMimeTypes = [
+                // 图片文件
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'bmp' => 'image/bmp',
+                'webp' => 'image/webp',
+                'svg' => 'image/svg+xml',
+                
+                // PDF文件
+                'pdf' => 'application/pdf',
+                
+                // 文本文件
+                'txt' => 'text/plain',
+                'json' => 'application/json',
+                'xml' => 'application/xml',
+                'html' => 'text/html',
+                'htm' => 'text/html',
+                'css' => 'text/css',
+                'js' => 'application/javascript',
+                
+                // Office文档（部分浏览器支持预览）
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'ppt' => 'application/vnd.ms-powerpoint',
+                'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            ];
+            
+            // 检查文件类型是否支持预览
+            if (!isset($previewMimeTypes[$fileExtension])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '该文件类型不支持在线预览，请使用下载功能查看文件',
+                    'file_type' => $fileExtension,
+                    'supported_types' => array_keys($previewMimeTypes)
+                ], 200);
+            }
+            
+            // 获取文件MIME类型
+            $contentType = $previewMimeTypes[$fileExtension];
+            
+            // 记录预览日志
+            \Log::info('附件预览成功', [
+                'case_id' => $caseId,
+                'attachment_id' => $attachmentId,
+                'file_name' => $attachment->file_name,
+                'file_size' => $attachment->file_size,
+                'file_type' => $fileExtension,
+                'file_path' => $attachment->file_path
+            ]);
+            
+            // 清除输出缓冲
+            ob_clean();
+            
+            // 设置预览响应头
+            header('Content-Type: ' . $contentType);
+            header('Content-Length: ' . filesize($filePath));
+            
+            // 对于图片和PDF文件，允许在浏览器中直接显示
+            if (in_array($fileExtension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'pdf'])) {
+                header('Content-Disposition: inline; filename="' . rawurlencode($attachment->file_name) . '"');
+            } else {
+                // 对于文本文件等，也使用inline方式让浏览器尝试直接显示
+                header('Content-Disposition: inline; filename="' . rawurlencode($attachment->file_name) . '"');
+            }
+            
+            header('Cache-Control: public');
+            header('Pragma: public');
+            header('Expires: 0');
+            
             // 输出文件内容
             readfile($filePath);
             
@@ -340,7 +511,7 @@ class CaseAttachmentController extends Controller
             ], 200);
             
         } catch (\Exception $e) {
-            \Log::error('附件下载失败', [
+            \Log::error('附件预览失败', [
                 'case_id' => $caseId,
                 'attachment_id' => $attachmentId,
                 'error' => $e->getMessage(),
@@ -350,8 +521,87 @@ class CaseAttachmentController extends Controller
             
             return response()->json([
                 'success' => false,
-                'message' => '下载失败：' . $e->getMessage()
+                'message' => '预览失败：' . $e->getMessage()
             ], 200);
+        }
+    }
+
+    /**
+    删除项目附件
+    功能说明：
+    根据项目ID和附件ID删除指定的附件文件及其记录
+    请求参数：
+    caseId（项目ID）：必填，整数，通过URL路径传入，指定附件所属的项目
+    attachmentId（附件ID）：必填，整数，通过URL路径传入，指定要删除的附件
+    返回参数：
+    success（操作状态）：布尔值，true表示删除成功
+    message（提示信息）：字符串，删除成功的提示信息
+    @param int $caseId 项目ID
+    @param int $attachmentId 附件ID
+    @return \Illuminate\Http\JsonResponse 删除结果响应
+     */
+    public function deleteAttachment($caseId, $attachmentId)
+    {
+        try {
+            // 验证项目是否存在
+            $case = Cases::findOrFail($caseId);
+            
+            // 查找附件记录，确保附件属于指定项目
+            $attachment = CaseAttachment::where('case_id', $caseId)
+                                        ->where('id', $attachmentId)
+                                        ->first();
+            
+            if (!$attachment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '附件不存在或不属于指定项目'
+                ], 404);
+            }
+            
+            // 构建完整的文件路径
+            $filePath = storage_path('app/public/' . $attachment->file_path);
+            
+            // 如果文件存在，则删除文件
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+            
+            // 删除附件记录
+            $attachment->delete();
+            
+            // 记录删除日志
+            \Log::info('附件删除成功', [
+                'case_id' => $caseId,
+                'attachment_id' => $attachmentId,
+                'file_name' => $attachment->file_name,
+                'file_path' => $attachment->file_path
+            ]);
+            
+            // 返回删除成功响应
+            return response()->json([
+                'success' => true,
+                'message' => '文件删除成功'
+            ]);
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '项目不存在'
+            ], 404);
+            
+        } catch (\Exception $e) {
+            \Log::error('附件删除失败', [
+                'case_id' => $caseId,
+                'attachment_id' => $attachmentId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => '删除失败：' . $e->getMessage()
+            ], 500);
         }
     }
 }
